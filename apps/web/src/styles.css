@@ -1,0 +1,174 @@
+@import 'tailwindcss';
+
+/**
+ * NEXA design tokens.
+ *
+ * A restrained palette: one accent (indigo), one warm signal (amber) and one
+ * positive signal (emerald), on a near-neutral slate ground. Semantic tokens
+ * rather than raw colours, so the whole product re-themes from this block.
+ */
+@theme {
+  --color-ink-50: #f7f8fa;
+  --color-ink-100: #eef0f4;
+  --color-ink-200: #dde1e9;
+  --color-ink-300: #c2c8d6;
+  --color-ink-400: #929bb0;
+  --color-ink-500: #6b7488;
+  --color-ink-600: #4d5567;
+  --color-ink-700: #383e4d;
+  --color-ink-800: #232833;
+  --color-ink-900: #151922;
+  --color-ink-950: #0b0d12;
+
+  --color-brand-50: #eef1ff;
+  --color-brand-100: #e0e5ff;
+  --color-brand-200: #c6cfff;
+  --color-brand-300: #a3aeff;
+  --color-brand-400: #8286fb;
+  --color-brand-500: #6b63f2;
+  --color-brand-600: #5b45e6;
+  --color-brand-700: #4f37ca;
+  --color-brand-800: #4130a3;
+  --color-brand-900: #372e81;
+
+  --font-sans:
+    'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  :root {
+    --surface: #ffffff;
+    --surface-muted: var(--color-ink-50);
+    --surface-raised: #ffffff;
+    --border: var(--color-ink-200);
+    --border-strong: var(--color-ink-300);
+    --text: var(--color-ink-900);
+    --text-muted: var(--color-ink-500);
+    --text-subtle: var(--color-ink-400);
+    color-scheme: light;
+  }
+
+  html.dark {
+    --surface: var(--color-ink-950);
+    --surface-muted: #10131a;
+    --surface-raised: var(--color-ink-900);
+    --border: #232833;
+    --border-strong: #2f3644;
+    --text: var(--color-ink-50);
+    --text-muted: var(--color-ink-400);
+    --text-subtle: var(--color-ink-500);
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--surface-muted);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible focus for keyboard users; suppressed for pointer interaction. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-ink-900);
+  }
+}
+
+@layer components {
+  .surface {
+    background: var(--surface);
+  }
+  .surface-raised {
+    background: var(--surface-raised);
+  }
+  .muted {
+    color: var(--text-muted);
+  }
+  .subtle {
+    color: var(--text-subtle);
+  }
+
+  /* Numeric columns line up only with tabular figures. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /*
+   * Chart frame.
+   *
+   * Recharts' ResponsiveContainer measures its parent. A grid or flex item
+   * defaults to `min-width: auto`, so without this the chart's intrinsic width
+   * sets the column width instead of the other way round — and the whole page
+   * scrolls sideways on a phone.
+   */
+  .chart-frame {
+    width: 100%;
+    min-width: 0;
+  }
+  .chart-frame .recharts-wrapper,
+  .chart-frame .recharts-surface {
+    max-width: 100%;
+  }
+}
+
+@keyframes nexa-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nexa-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-up {
+  animation: nexa-fade-up 0.24s ease-out both;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: nexa-shimmer 1.4s infinite;
+}
+html.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

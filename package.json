@@ -1,0 +1,33 @@
+{
+  "name": "nexa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NEXA — the intelligent operating system for modern small businesses.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @nexa/api\" \"npm run dev -w @nexa/web\"",
+    "dev:api": "npm run dev -w @nexa/api",
+    "dev:web": "npm run dev -w @nexa/web",
+    "build": "npm run build -w @nexa/api && npm run build -w @nexa/web",
+    "start": "npm run start -w @nexa/api",
+    "db:push": "npm run db:push -w @nexa/database",
+    "db:seed": "npm run seed -w @nexa/api",
+    "db:reset": "npm run reset -w @nexa/api",
+    "setup": "npm install && npm run db:reset",
+    "test": "node --env-file=.env.test --import tsx --test --test-concurrency=1 \"tests/*.test.ts\"",
+    "typecheck": "tsc -b --pretty"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "concurrently": "^9.2.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
