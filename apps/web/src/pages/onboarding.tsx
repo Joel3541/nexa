@@ -122,14 +122,14 @@ export default function OnboardingPage() {
           {steps.map((label, index) => (
             <div key={label} className="flex-1">
               <div className={cx('h-1 rounded-full transition-colors', index <= step ? 'bg-brand-600' : 'bg-[var(--border)]')} />
-              <p className={cx('mt-1.5 text-[12px]', index <= step ? 'text-brand-700 dark:text-brand-300' : 'subtle')}>{label}</p>
+              <p className={cx('mt-1.5 text-[12px]', index <= step ? 'text-accent' : 'subtle')}>{label}</p>
             </div>
           ))}
         </div>
 
         <Card>
           {error && (
-            <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-red-700">
+            <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-negative">
               {error}
             </div>
           )}

@@ -161,7 +161,7 @@ export default function ActivityPage() {
                     {event.actionHref && (
                       <Link
                         to={event.actionHref}
-                        className="shrink-0 self-center text-[13px] font-medium text-brand-600 hover:underline"
+                        className="shrink-0 self-center text-[13px] font-medium text-accent hover:underline"
                       >
                         {event.actionLabel ?? 'Open'} →
                       </Link>

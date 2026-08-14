@@ -85,7 +85,7 @@ export default function InvoiceDetailPage() {
               <span className="flex flex-wrap items-center gap-2">
                 <Badge tone={statusTone(invoice.status)}>{titleCase(invoice.status)}</Badge>
                 <span>Issued {fullDate(invoice.issueDate, locale)}</span>
-                <span className={invoice.daysOverdue > 0 ? 'text-red-600' : ''}>
+                <span className={invoice.daysOverdue > 0 ? 'text-negative' : ''}>
                   · Due {fullDate(invoice.dueDate, locale)}
                   {invoice.daysOverdue > 0 && ` (${invoice.daysOverdue} days late)`}
                 </span>
@@ -142,7 +142,7 @@ export default function InvoiceDetailPage() {
 
             <div className="mt-6 border-t border-[var(--border)] pt-4">
               <p className="text-[12px] font-semibold tracking-wide uppercase subtle">Bill to</p>
-              <Link to={`/app/customers/${invoice.customerId}`} className="text-[15px] font-medium hover:text-brand-600">
+              <Link to={`/app/customers/${invoice.customerId}`} className="text-[15px] font-medium hover:text-accent">
                 {invoice.customerName}
               </Link>
               {invoice.customerEmail && <p className="text-[13px] muted">{invoice.customerEmail}</p>}
@@ -194,12 +194,12 @@ export default function InvoiceDetailPage() {
                 {invoice.paidMinor > 0 && (
                   <div className="flex justify-between">
                     <dt className="muted">Paid</dt>
-                    <dd className="tnum text-emerald-600">−{money(invoice.paidMinor, currency, locale)}</dd>
+                    <dd className="tnum text-positive">−{money(invoice.paidMinor, currency, locale)}</dd>
                   </div>
                 )}
                 <div className="flex justify-between font-semibold">
                   <dt>Balance due</dt>
-                  <dd className={`tnum ${invoice.balanceMinor > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  <dd className={`tnum ${invoice.balanceMinor > 0 ? 'text-negative' : 'text-positive'}`}>
                     {money(invoice.balanceMinor, currency, locale)}
                   </dd>
                 </div>
@@ -226,7 +226,7 @@ export default function InvoiceDetailPage() {
                       <p className="text-[14px] font-medium">{titleCase(payment.method)}</p>
                       <p className="text-[12.5px] subtle">{fullDate(payment.receivedAt, locale)}</p>
                     </div>
-                    <span className="text-[14px] font-semibold tnum text-emerald-600">
+                    <span className="text-[14px] font-semibold tnum text-positive">
                       {money(payment.amountMinor, currency, locale)}
                     </span>
                   </li>

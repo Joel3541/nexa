@@ -83,7 +83,7 @@ export default function SaleDetailPage() {
               title="Items"
               subtitle={
                 order.customerId ? (
-                  <Link to={`/app/customers/${order.customerId}`} className="text-brand-600 hover:underline">
+                  <Link to={`/app/customers/${order.customerId}`} className="text-accent hover:underline">
                     {order.customerName}
                   </Link>
                 ) : (
@@ -115,7 +115,7 @@ export default function SaleDetailPage() {
               {order.discountMinor > 0 && (
                 <div className="flex justify-between">
                   <dt className="muted">Discount</dt>
-                  <dd className="tnum text-red-600">−{money(order.discountMinor, currency, locale)}</dd>
+                  <dd className="tnum text-negative">−{money(order.discountMinor, currency, locale)}</dd>
                 </div>
               )}
               {order.taxMinor > 0 && (
@@ -130,12 +130,12 @@ export default function SaleDetailPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="muted">Paid</dt>
-                <dd className="tnum text-emerald-600">{money(order.paidMinor, currency, locale)}</dd>
+                <dd className="tnum text-positive">{money(order.paidMinor, currency, locale)}</dd>
               </div>
               {order.balanceMinor > 0 && (
                 <div className="flex justify-between font-medium">
                   <dt>Balance due</dt>
-                  <dd className="tnum text-red-600">{money(order.balanceMinor, currency, locale)}</dd>
+                  <dd className="tnum text-negative">{money(order.balanceMinor, currency, locale)}</dd>
                 </div>
               )}
             </dl>
@@ -151,7 +151,7 @@ export default function SaleDetailPage() {
                       <p className="text-[14px] font-medium">{titleCase(payment.method)}</p>
                       <p className="text-[12.5px] subtle">{dateTime(payment.receivedAt, locale)}</p>
                     </div>
-                    <span className="text-[14px] font-semibold tnum text-emerald-600">
+                    <span className="text-[14px] font-semibold tnum text-positive">
                       {money(payment.amountMinor, currency, locale)}
                     </span>
                   </li>

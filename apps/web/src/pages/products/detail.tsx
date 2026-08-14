@@ -147,7 +147,7 @@ export default function ProductDetailPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p
-                        className={`text-[14px] font-semibold tnum ${movement.quantityDelta > 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                        className={`text-[14px] font-semibold tnum ${movement.quantityDelta > 0 ? 'text-positive' : 'text-negative'}`}
                       >
                         {movement.quantityDelta > 0 ? '+' : ''}
                         {movement.quantityDelta}

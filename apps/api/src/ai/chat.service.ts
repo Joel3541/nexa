@@ -7,6 +7,7 @@ import {
   type Business,
 } from '@nexa/database';
 import {
+  AiProviderError,
   executeApprovedAction,
   getAgent,
   getAiProvider,
@@ -17,7 +18,8 @@ import {
 } from '@nexa/ai';
 import type { AiActionView, AiChatResponse, AiMessageView, Permission } from '@nexa/types';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
-import { badRequest, forbidden, notFound } from '../lib/errors.js';
+import { AppError, badRequest, forbidden, notFound } from '../lib/errors.js';
+import { assertWithinBudget } from '../services/ai-usage.service.js';
 import { logger } from '../lib/logger.js';
 import { emitActivity, trackUsage, writeAudit } from '../db/records.js';
 import { ownedRow } from '../db/scope.js';
@@ -132,6 +134,10 @@ export async function sendMessage(
   const agent = getAgent(input.agentId);
   const provider = getAiProvider();
 
+  // Checked before anything is written or spent. A turn that will be refused
+  // should not leave a half-conversation behind.
+  await assertWithinBudget(business.id, now);
+
   let conversationId = input.conversationId ?? null;
   if (conversationId) {
     const [existing] = await db
@@ -174,7 +180,22 @@ export async function sendMessage(
       businessMeta: { industry: business.industry, country: business.country },
     });
   } catch (error) {
-    logger.error('ai turn failed', { error: String(error), businessId: business.id, provider: provider.name });
+    logger.error('ai turn failed', {
+      error: String(error),
+      businessId: business.id,
+      provider: provider.name,
+      kind: error instanceof AiProviderError ? error.kind : 'unhandled',
+    });
+    // The provider already phrased its failures for a business owner and knows
+    // whether retrying is worth the user's time. Pass that through rather than
+    // flattening every cause into one vague sentence.
+    if (error instanceof AiProviderError) {
+      throw new AppError(
+        error.retryable ? 503 : 502,
+        error.retryable ? 'ai_unavailable' : 'ai_failed',
+        `${error.message} Nothing was changed.`,
+      );
+    }
     throw badRequest('The assistant could not complete that request. Nothing was changed. Please try again.');
   }
 
@@ -189,8 +210,11 @@ export async function sendMessage(
       toolCalls: result.toolCalls,
       provider: result.provider,
       model: result.model,
-      inputTokens: result.usage?.inputTokens ?? null,
-      outputTokens: result.usage?.outputTokens ?? null,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      cacheReadTokens: result.usage.cacheReadTokens,
+      cacheWriteTokens: result.usage.cacheWriteTokens,
+      costMicros: result.usage.costMicros,
       latencyMs: result.latencyMs,
     })
     .returning();
@@ -243,7 +267,13 @@ export async function sendMessage(
     businessId: business.id,
     userId: actor.userId,
     name: 'ai_message_sent',
-    properties: { agent: agent.id, toolCount: result.toolCalls.length },
+    properties: {
+      agent: agent.id,
+      toolCount: result.toolCalls.length,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      costMicros: result.usage.costMicros,
+    },
   });
 
   return {

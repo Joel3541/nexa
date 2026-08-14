@@ -151,7 +151,7 @@ export default function NewInvoicePage() {
               </Field>
               <button
                 onClick={() => setLines((current) => (current.length > 1 ? current.filter((l) => l.key !== line.key) : current))}
-                className="mb-2 h-9 text-[13px] subtle hover:text-red-600"
+                className="mb-2 h-9 text-[13px] subtle hover:text-negative"
                 aria-label="Remove line"
               >
                 ✕

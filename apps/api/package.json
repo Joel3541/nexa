@@ -9,7 +9,8 @@
     "start": "tsx src/index.ts",
     "seed": "tsx src/seed/run.ts",
     "reset": "tsx src/seed/run.ts --reset",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "ai:verify": "tsx src/scripts/ai-verify.ts"
   },
   "dependencies": {
     "@nexa/ai": "*",

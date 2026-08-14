@@ -20,6 +20,7 @@ export interface Toast {
   title: string;
   description?: string;
   tone: 'success' | 'error' | 'info';
+  leaving?: boolean;
 }
 
 interface ToastContextValue {
@@ -30,6 +31,7 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+const EXIT_MS = 220;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -37,8 +39,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = crypto.randomUUID();
     setToasts((current) => [...current.slice(-3), { ...toast, id }]);
-    // Errors linger; confirmations get out of the way.
-    setTimeout(() => setToasts((current) => current.filter((t) => t.id !== id)), toast.tone === 'error' ? 7000 : 4000);
+    // Errors linger; confirmations get out of the way. Two-phase removal so
+    // the exit animation can play instead of the toast vanishing.
+    const life = toast.tone === 'error' ? 7000 : 4000;
+    setTimeout(() => {
+      setToasts((current) => current.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+      setTimeout(() => setToasts((current) => current.filter((t) => t.id !== id)), EXIT_MS);
+    }, life);
   }, []);
 
   const value = useMemo<ToastContextValue>(
@@ -59,26 +66,49 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           // Announced politely so a screen reader is not interrupted mid-task.
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 p-4 sm:bottom-auto sm:top-0 sm:items-end"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 p-4 sm:top-0 sm:bottom-auto sm:items-end"
         >
           {toasts.map((toast) => (
             <div
               key={toast.id}
               className={cx(
-                'animate-fade-up pointer-events-auto w-full max-w-sm rounded-xl border p-3.5 shadow-lg backdrop-blur',
-                toast.tone === 'success' && 'border-emerald-200 bg-emerald-50/95 dark:border-emerald-900 dark:bg-emerald-950/90',
-                toast.tone === 'error' && 'border-red-200 bg-red-50/95 dark:border-red-900 dark:bg-red-950/90',
-                toast.tone === 'info' && 'border-[var(--border)] bg-[var(--surface)]/95',
+                'pointer-events-auto w-full max-w-sm rounded-2xl border p-3.5 shadow-lifted backdrop-blur-xl',
+                'transition-all duration-[220ms] ease-[var(--ease-out-soft)]',
+                toast.leaving ? 'translate-y-1 scale-95 opacity-0' : 'animate-scale-in',
+                toast.tone === 'success' &&
+                  'border-emerald-300 bg-emerald-50/95 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/90 dark:text-emerald-100',
+                toast.tone === 'error' &&
+                  'border-red-300 bg-red-50/95 text-red-900 dark:border-red-500/40 dark:bg-red-950/90 dark:text-red-100',
+                toast.tone === 'info' && 'border-[var(--border-strong)] bg-[var(--surface)]/95',
               )}
             >
-              <p className="text-sm font-medium">{toast.title}</p>
-              {toast.description && <p className="mt-0.5 text-[13px] muted">{toast.description}</p>}
+              <div className="flex items-start gap-2.5">
+                <ToastGlyph tone={toast.tone} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{toast.title}</p>
+                  {toast.description && <p className="mt-0.5 text-[13px] opacity-80">{toast.description}</p>}
+                </div>
+              </div>
             </div>
           ))}
         </div>,
         document.body,
       )}
     </ToastContext.Provider>
+  );
+}
+
+function ToastGlyph({ tone }: { tone: Toast['tone'] }) {
+  const path = {
+    success: 'm5 10.5 3.2 3.2L15 7',
+    error: 'M10 6.5v5M10 14h.01',
+    info: 'M10 9v5M10 6.5h.01',
+  }[tone];
+  return (
+    <svg viewBox="0 0 20 20" className="mt-0.5 size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      {tone !== 'success' && <circle cx="10" cy="10" r="8" strokeWidth="1.6" />}
+      <path d={path} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -89,7 +119,7 @@ export function useToast(): ToastContextValue {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Modal / Drawer                                                              */
+/* Modal                                                                       */
 /* -------------------------------------------------------------------------- */
 
 export function Modal({
@@ -110,20 +140,48 @@ export function Modal({
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setVisible(false);
+      return;
+    }
+    // Mount first, then flip to visible so the enter transition actually runs.
+    const frame = requestAnimationFrame(() => setVisible(true));
+
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
+      // Focus trap: Tab must not escape an open dialog.
+      if (event.key === 'Tab' && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0]!;
+        const last = focusable[focusable.length - 1]!;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     document.addEventListener('keydown', onKey);
-    // Prevent the page behind from scrolling while a dialog is open.
     const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
+
     return () => {
+      cancelAnimationFrame(frame);
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
+      // Return focus where the user left it.
+      previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -133,7 +191,14 @@ export function Modal({
 
   return createPortal(
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center">
-      <div className="absolute inset-0 bg-ink-950/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
+      <div
+        className={cx(
+          'absolute inset-0 bg-ink-950/50 backdrop-blur-[3px] transition-opacity duration-[var(--duration-base)] ease-[var(--ease-smooth)]',
+          visible ? 'opacity-100' : 'opacity-0',
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
         ref={panelRef}
         role="dialog"
@@ -141,22 +206,24 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cx(
-          'animate-fade-up surface relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--border)] shadow-2xl outline-none sm:rounded-2xl',
+          'surface relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-[var(--radius-panel)] border border-[var(--border)] shadow-lifted outline-none sm:rounded-[var(--radius-panel)]',
+          'transition-all duration-[var(--duration-base)] ease-[var(--ease-out-soft)]',
+          visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-6 scale-[0.97] opacity-0',
           width,
         )}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--border)] bg-[var(--surface)] px-5 py-4">
+        <div className="surface sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold">{title}</h2>
+            <h2 className="text-base font-semibold tracking-[-0.01em]">{title}</h2>
             {description && <p className="mt-0.5 text-[13px] muted">{description}</p>}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+          <Button variant="ghost" size="icon" className="size-8 rounded-lg" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </Button>
         </div>
         <div className="px-5 py-4">{children}</div>
         {footer && (
-          <div className="sticky bottom-0 flex justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface)] px-5 py-3.5">
+          <div className="surface sticky bottom-0 flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3.5">
             {footer}
           </div>
         )}
@@ -212,16 +279,16 @@ export function ConfirmDialog({
 /* -------------------------------------------------------------------------- */
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cx('skeleton rounded-md', className)} />;
+  return <div className={cx('skeleton rounded-xl', className)} />;
 }
 
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div className="space-y-2.5" aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex gap-3">
+        <div key={rowIndex} className="flex gap-3" style={{ opacity: 1 - rowIndex * 0.12 }}>
           {Array.from({ length: columns }).map((__, columnIndex) => (
-            <Skeleton key={columnIndex} className={cx('h-9 flex-1', columnIndex === 0 && 'max-w-[38%]')} />
+            <Skeleton key={columnIndex} className={cx('h-10 flex-1', columnIndex === 0 && 'max-w-[38%]')} />
           ))}
         </div>
       ))}
@@ -231,7 +298,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2.5 py-12 text-sm muted">
+    <div className="animate-fade-in flex items-center justify-center gap-2.5 py-12 text-sm muted">
       <Spinner className="size-4" />
       {label}
     </div>
@@ -250,9 +317,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+    <div className="animate-fade-up flex flex-col items-center justify-center px-6 py-14 text-center">
       {icon && (
-        <div className="mb-3.5 flex size-11 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-subtle)]">
+        <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-[var(--surface-muted)] text-xl text-[var(--text-subtle)]">
           {icon}
         </div>
       )}
@@ -279,9 +346,9 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <Card className="border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25">
+    <Card className="animate-fade-up border-red-200 bg-red-50/60 dark:border-red-500/30 dark:bg-red-950/25">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300">
+        <div className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300">
           <WarningIcon />
         </div>
         <div className="min-w-0 flex-1">
@@ -298,10 +365,6 @@ export function ErrorState({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Icons used by the states above                                              */
-/* -------------------------------------------------------------------------- */
-
 function CloseIcon() {
   return (
     <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -313,7 +376,11 @@ function CloseIcon() {
 function WarningIcon() {
   return (
     <svg viewBox="0 0 20 20" className="size-4.5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-      <path d="M10 7v4M10 14h.01M8.6 3.2 1.9 15a1.6 1.6 0 0 0 1.4 2.4h13.4a1.6 1.6 0 0 0 1.4-2.4L11.4 3.2a1.6 1.6 0 0 0-2.8 0Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10 7v4M10 14h.01M8.6 3.2 1.9 15a1.6 1.6 0 0 0 1.4 2.4h13.4a1.6 1.6 0 0 0 1.4-2.4L11.4 3.2a1.6 1.6 0 0 0-2.8 0Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

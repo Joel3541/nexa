@@ -1,0 +1,59 @@
+# ---------------------------------------------------------------------------
+# NEXA on Fly.io
+#
+#   fly launch --no-deploy            # creates the app, keeps this config
+#   fly postgres create --name nexa-db
+#   fly postgres attach nexa-db       # sets DATABASE_URL
+#   fly secrets set AUTH_SECRET="$(openssl rand -hex 32)"
+#   fly deploy
+#
+# Fly runs machines close to the user, which matters for the launch markets:
+# an Accra or Lagos business on a US-East-only host feels every request.
+# Set the primary region accordingly — `jnb` (Johannesburg) is the closest
+# Fly region to West Africa today.
+# ---------------------------------------------------------------------------
+
+app = "nexa"
+primary_region = "jnb"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  API_PORT = "4000"
+  DATABASE_DRIVER = "postgres"
+  COOKIE_SECURE = "true"
+  AI_PROVIDER = "mock"
+  AI_MODEL = "claude-opus-5"
+  EMAIL_PROVIDER = "console"
+  PAYMENT_PROVIDER = "mock"
+  SEED_DEMO_DATA = "false"
+
+# Secrets — never in this file:
+#   fly secrets set AUTH_SECRET=... AI_API_KEY=... PAYMENT_WEBHOOK_SECRET=...
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # Never scale to zero: a suspended machine cold-starts on the first request,
+  # and the first request is usually a customer opening an invoice link.
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+[[http_service.checks]]
+  grace_period = "30s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

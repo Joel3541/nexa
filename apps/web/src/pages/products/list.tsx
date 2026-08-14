@@ -139,7 +139,7 @@ export default function ProductsPage() {
                       row.marginPercent === null ? (
                         <span className="subtle">—</span>
                       ) : (
-                        <span className={row.marginPercent < 20 ? 'text-amber-600' : ''}>
+                        <span className={row.marginPercent < 20 ? 'text-warning' : ''}>
                           {Math.round(row.marginPercent)}%
                         </span>
                       ),
@@ -152,7 +152,7 @@ export default function ProductsPage() {
                       row.kind === 'service' || !row.trackInventory ? (
                         <span className="subtle">n/a</span>
                       ) : (
-                        <span className={row.isLowStock ? 'font-medium text-red-600' : ''}>{row.quantity}</span>
+                        <span className={row.isLowStock ? 'font-medium text-negative' : ''}>{row.quantity}</span>
                       ),
                   },
                   {

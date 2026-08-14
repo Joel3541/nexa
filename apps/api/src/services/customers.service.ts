@@ -19,10 +19,18 @@ import { inBusiness, ownedRow } from '../db/scope.js';
 export const INACTIVE_DAYS = 60;
 export const VIP_ORDER_THRESHOLD = 4;
 
+/**
+ * Who caused a change.
+ *
+ * `id` is nullable because not every actor is a person: a payment gateway
+ * confirming a webhook, or a scheduled agent run, has a name to attribute the
+ * change to but no user row to point at. Audit and activity rows record the
+ * source alongside the name, so "who did this" stays answerable either way.
+ */
 export interface Actor {
-  id: string;
+  id: string | null;
   name: string;
-  source?: 'user' | 'ai';
+  source?: 'user' | 'ai' | 'system';
 }
 
 /* -------------------------------------------------------------------------- */

@@ -162,7 +162,7 @@ export default function ExpensesPage() {
                     numeric: true,
                     render: (row) =>
                       can('expenses:write') ? (
-                        <button onClick={() => setDeleteId(row.id)} className="text-[12.5px] subtle hover:text-red-600">
+                        <button onClick={() => setDeleteId(row.id)} className="text-[12.5px] subtle hover:text-negative">
                           Delete
                         </button>
                       ) : null,

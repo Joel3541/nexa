@@ -48,7 +48,7 @@ export default function SignInPage() {
       footer={
         <>
           New to NEXA?{' '}
-          <Link to="/sign-up" className="font-medium text-brand-600 hover:underline">
+          <Link to="/sign-up" className="font-medium text-accent hover:underline">
             Create an account
           </Link>
         </>
@@ -79,7 +79,7 @@ export default function SignInPage() {
           htmlFor="password"
           error={fields.password}
           hint={
-            <Link to="/forgot-password" className="text-brand-600 hover:underline">
+            <Link to="/forgot-password" className="text-accent hover:underline">
               Forgot your password?
             </Link>
           }

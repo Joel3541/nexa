@@ -22,7 +22,8 @@
     "db:reset": "npm run reset -w @nexa/api",
     "setup": "npm install && npm run db:reset",
     "test": "node --env-file=.env.test --import tsx --test --test-concurrency=1 \"tests/*.test.ts\"",
-    "typecheck": "tsc -b --pretty"
+    "typecheck": "tsc -p packages/tsconfig.json && tsc -p apps/api/tsconfig.json && tsc -p apps/web/tsconfig.json",
+    "ai:verify": "npm run ai:verify -w @nexa/api"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

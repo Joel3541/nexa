@@ -118,7 +118,7 @@ export default function InvoicesPage() {
                     header: 'Due',
                     secondary: true,
                     render: (row) => (
-                      <span className={row.daysOverdue > 0 ? 'text-red-600' : 'muted'}>
+                      <span className={row.daysOverdue > 0 ? 'text-negative' : 'muted'}>
                         {fullDate(row.dueDate, locale)}
                         {row.daysOverdue > 0 && ` · ${row.daysOverdue}d late`}
                       </span>
@@ -138,9 +138,9 @@ export default function InvoicesPage() {
                     numeric: true,
                     render: (row) =>
                       row.balanceMinor > 0 ? (
-                        <span className="font-medium text-red-600">{money(row.balanceMinor, currency, locale)}</span>
+                        <span className="font-medium text-negative">{money(row.balanceMinor, currency, locale)}</span>
                       ) : (
-                        <span className="text-emerald-600">Paid</span>
+                        <span className="text-positive">Paid</span>
                       ),
                   },
                 ]}

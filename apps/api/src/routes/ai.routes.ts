@@ -14,6 +14,7 @@ import {
   sendMessage,
 } from '../ai/chat.service.js';
 import { registerTools } from '../ai/tools.js';
+import { getUsageSummary } from '../services/ai-usage.service.js';
 
 registerTools();
 
@@ -93,6 +94,20 @@ aiRouter.post(
         permissions: tenant.permissions,
       }, input),
     );
+  }),
+);
+
+/**
+ * Month-to-date AI consumption for this workspace.
+ *
+ * Deliberately readable by anyone who can use the assistant: a member should be
+ * able to see what the tool is costing the business they work for.
+ */
+aiRouter.get(
+  '/usage',
+  requirePermission('ai:use'),
+  handler(async (req, res) => {
+    res.json(await getUsageSummary(getTenant(req).business.id));
   }),
 );
 

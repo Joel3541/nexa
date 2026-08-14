@@ -72,7 +72,7 @@ function Section({
 }) {
   return (
     <section id={id} className={cx('mx-auto max-w-6xl px-5 py-16 sm:py-20', className)}>
-      {eyebrow && <p className="mb-2.5 text-[13px] font-semibold tracking-wide text-brand-600 uppercase">{eyebrow}</p>}
+      {eyebrow && <p className="mb-2.5 text-[13px] font-semibold tracking-wide text-accent uppercase">{eyebrow}</p>}
       <h2 className="max-w-3xl text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] sm:text-[34px]">{title}</h2>
       {lead && <p className="mt-3.5 max-w-2xl text-[16px] leading-relaxed muted">{lead}</p>}
       {children && <div className="mt-9">{children}</div>}
@@ -92,11 +92,11 @@ function Hero() {
         <h1 className="max-w-3xl text-[36px] leading-[1.08] font-semibold tracking-[-0.03em] sm:text-[54px]">
           Run your business.
           <br />
-          <span className="text-brand-600">NEXA runs the busywork.</span>
+          <span className="text-accent">NEXA runs the busywork.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-[17px] leading-relaxed muted">
           An intelligent operating system that helps you understand your business, manage daily operations and act on
-          opportunities — customers, sales, invoices, stock and money in one place, with an AI that actually knows your numbers.
+          opportunities, from customers, sales, invoices, stock and money in one place, with an AI that actually knows your numbers.
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-3">
           <Link to="/sign-up">
@@ -167,12 +167,12 @@ function BriefMock() {
         <span className="size-2.5 rounded-full bg-red-400" />
         <span className="size-2.5 rounded-full bg-amber-400" />
         <span className="size-2.5 rounded-full bg-emerald-400" />
-        <span className="ml-2 text-[12px] subtle">NEXA — Morning Brief</span>
+        <span className="ml-2 text-[12px] subtle">NEXA Morning Brief</span>
       </div>
       <div className="p-5 sm:p-6">
-        <p className="text-[13px] font-semibold tracking-wide text-brand-600 uppercase">NEXA Morning Brief</p>
+        <p className="text-[13px] font-semibold tracking-wide text-accent uppercase">NEXA Morning Brief</p>
         <p className="mt-2 text-[19px] font-semibold">Good morning, Joel.</p>
-        <p className="mt-1 text-[15px] muted">GH₵3,745.00 is overdue — that's today's priority.</p>
+        <p className="mt-1 text-[15px] muted">GH₵3,745.00 is overdue, that's today's priority.</p>
         <ul className="mt-5 space-y-2.5 text-[14px]">
           {[
             ['warning', 'Revenue is GH₵16,287.94, 27% down on the previous period.'],
@@ -194,9 +194,9 @@ function BriefMock() {
           ))}
         </ul>
         <div className="mt-5 rounded-xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-800 dark:bg-brand-900/25">
-          <p className="text-[13px] font-semibold text-brand-800 dark:text-brand-200">Recommended action</p>
+          <p className="text-[13px] font-semibold text-accent">Recommended action</p>
           <p className="mt-1 text-[14px]">
-            Follow up on 28 overdue invoices — GH₵3,745.00 is money you have already earned.
+            Follow up on 28 overdue invoices, GH₵3,745.00 is money you have already earned.
           </p>
         </div>
       </div>
@@ -248,8 +248,8 @@ function DashboardSection() {
               <p
                 className={cx(
                   'mt-1.5 text-[26px] leading-none font-semibold tnum',
-                  tone === 'positive' && 'text-emerald-600',
-                  tone === 'negative' && 'text-red-600',
+                  tone === 'positive' && 'text-positive',
+                  tone === 'negative' && 'text-negative',
                 )}
               >
                 {value}
@@ -292,9 +292,9 @@ function CustomerSection() {
 
 function AssistantSection() {
   const exchanges = [
-    ['Why did revenue fall?', 'Revenue is GH₵16,287.94, 27% down on the previous 30 days. Order count moved from 156 to 114. Glow Serum sold 0 units versus 24 — it stocked out on the 12th. Braid Sheen Spray is down 87%.'],
-    ['Who owes me money?', 'You are owed GH₵4,594.00 across 36 open invoices. GH₵3,745.00 of that is overdue — 28 invoices, oldest 132 days past due.'],
-    ['Create a follow-up task for every overdue invoice', 'I have prepared 28 follow-up tasks — one per overdue invoice — for your approval. Nothing has been created yet.'],
+    ['Why did revenue fall?', 'Revenue is GH₵16,287.94, 27% down on the previous 30 days. Order count moved from 156 to 114. Glow Serum sold 0 units versus 24, and it stocked out on the 12th. Braid Sheen Spray is down 87%.'],
+    ['Who owes me money?', 'You are owed GH₵4,594.00 across 36 open invoices. GH₵3,745.00 of that is overdue,28 invoices, oldest 132 days past due.'],
+    ['Create a follow-up task for every overdue invoice', 'I have prepared 28 follow-up tasks, one per overdue invoice,for your approval. Nothing has been created yet.'],
   ];
 
   return (
@@ -332,7 +332,7 @@ function AssistantSection() {
 function AutomationSection() {
   const agents = [
     ['Finance', 'Watches receivables and flags what to chase, ranked by value and age.'],
-    ['Inventory', 'Projects stock-outs from real sales velocity — with a stated confidence level.'],
+    ['Inventory', 'Projects stock-outs from real sales velocity, with a stated confidence level.'],
     ['Customer', 'Notices relationships going quiet before they are gone for good.'],
     ['Sales', 'Surfaces momentum: what is rising, what is fading, and by how much.'],
   ];
@@ -368,7 +368,7 @@ function AnalyticsSection() {
 
 function SecuritySection() {
   const points = [
-    ['Tenant isolation', 'Every record is scoped to a business. Cross-tenant access returns "not found" — never a hint that the record exists.'],
+    ['Tenant isolation', 'Every record is scoped to a business. Cross-tenant access returns "not found", never a hint that the record exists.'],
     ['Role-based permissions', 'Owner, admin, manager, staff and viewer, enforced server-side on every request.'],
     ['Full audit trail', 'Who did what, when, and from where — including every action the AI took after approval.'],
     ['Your data is yours', 'Export it, or take the whole thing elsewhere. No lock-in.'],
@@ -421,7 +421,7 @@ function Pricing() {
             <ul className="mt-4 flex-1 space-y-2 text-[13.5px] muted">
               {tier.features.map((feature) => (
                 <li key={feature} className="flex gap-2">
-                  <span className="text-brand-600">✓</span>
+                  <span className="text-accent">✓</span>
                   {feature}
                 </li>
               ))}
@@ -441,7 +441,7 @@ function Pricing() {
 function Faq() {
   const faqs = [
     ['Do I need to be technical to use NEXA?', 'No. If you can use WhatsApp you can use NEXA. Setup takes about three minutes and the product explains itself as you go.'],
-    ['Can the AI change my records without asking?', 'No. Read operations run automatically. Anything consequential — creating records, sending messages, touching money — is proposed with a preview and waits for your explicit approval. Every approved action is logged.'],
+    ['Can the AI change my records without asking?', 'No. Read operations run automatically. Anything consequential, creating records, sending messages, touching money, etc. is proposed with a preview and waits for your explicit approval. Every approved action is logged.'],
     ['Will it work for my kind of business?', 'NEXA has one flexible core rather than separate apps per industry. A retailer sees orders and stock first; a salon sees appointments and services first. Same product, different emphasis.'],
     ['What about payments?', 'NEXA records payments against orders and invoices today, including mobile money, cash, card and bank transfer. Live payment processing connects through a provider interface — mobile money and card processors plug in without changing how the product works.'],
     ['Which currencies do you support?', 'Ghana, Nigeria, Kenya, South Africa, Côte d’Ivoire, Egypt, the UK, US, Canada, Germany and India today. Currency, tax labels, phone formats and payment rails all follow the country you choose.'],

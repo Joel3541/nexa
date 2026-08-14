@@ -4,7 +4,9 @@ import express, { type Express } from 'express';
 import { loadSession, loadTenant } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, requestId } from './middleware/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
+import { serveWebClient } from './middleware/static.js';
 import { apiRouter } from './routes/index.js';
+import { webhookRouter } from './routes/webhooks.routes.js';
 
 /**
  * Builds the Express application.
@@ -22,6 +24,11 @@ export function createApp(): Express {
   app.disable('x-powered-by');
 
   app.use(requestId);
+
+  // Before express.json(): webhook signatures are computed over the raw bytes,
+  // and a parsed-then-reserialised body will never reproduce them.
+  app.use('/webhooks', webhookRouter);
+
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 
@@ -59,8 +66,13 @@ export function createApp(): Express {
   app.use(loadSession, loadTenant);
   app.use('/api', apiRouter);
 
+  // After the API, before the 404: an unmatched /api path must still produce a
+  // JSON error, not the SPA shell.
+  const servingClient = serveWebClient(app);
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
+  Object.assign(app.locals, { servingClient });
   return app;
 }

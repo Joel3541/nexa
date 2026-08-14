@@ -1,19 +1,31 @@
 @import 'tailwindcss';
 
 /**
+ * Dark mode is driven by a class on <html>, never by the OS preference alone.
+ *
+ * This override matters more than it looks. Tailwind's default `dark:` variant
+ * is `@media (prefers-color-scheme: dark)`, while NEXA's design tokens switch on
+ * `html.dark`. With the two disagreeing, a user whose OS prefers dark saw
+ * dark-mode *text* colours painted on light-mode *surfaces* — pale lavender
+ * headings on white, at a contrast ratio of 1.5:1. Binding both to the same
+ * class is what keeps the theme coherent.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
  * NEXA design tokens.
  *
- * A restrained palette: one accent (indigo), one warm signal (amber) and one
- * positive signal (emerald), on a near-neutral slate ground. Semantic tokens
- * rather than raw colours, so the whole product re-themes from this block.
+ * One accent (indigo), one warning (amber), one positive (emerald), on a
+ * near-neutral slate ground. Everything semantic, so the whole product
+ * re-themes from this block.
  */
 @theme {
   --color-ink-50: #f7f8fa;
   --color-ink-100: #eef0f4;
-  --color-ink-200: #dde1e9;
-  --color-ink-300: #c2c8d6;
-  --color-ink-400: #929bb0;
-  --color-ink-500: #6b7488;
+  --color-ink-200: #dfe2ea;
+  --color-ink-300: #c3c9d8;
+  --color-ink-400: #7a8496;
+  --color-ink-500: #5c657a;
   --color-ink-600: #4d5567;
   --color-ink-700: #383e4d;
   --color-ink-800: #232833;
@@ -34,31 +46,102 @@
   --font-sans:
     'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --radius-card: 0.875rem;
+  /* Generous radii — the reference language is soft, rounded panels. */
+  --radius-card: 1.25rem;
+  --radius-panel: 1.5rem;
+
+  /* Motion. One easing vocabulary across the product.                       */
+  /* `smooth` for most state changes, `spring` for things that appear,       */
+  /* `exit` for things leaving (faster, so dismissal feels immediate).       */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 150ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
 }
 
 @layer base {
   :root {
     --surface: #ffffff;
-    --surface-muted: var(--color-ink-50);
+    --surface-muted: #f4f5f9;
     --surface-raised: #ffffff;
-    --border: var(--color-ink-200);
-    --border-strong: var(--color-ink-300);
-    --text: var(--color-ink-900);
-    --text-muted: var(--color-ink-500);
-    --text-subtle: var(--color-ink-400);
+    --surface-sunken: #eceef5;
+    /* The deep panel used for feature sections, mirroring the reference. */
+    --surface-invert: #16182a;
+    --surface-invert-raised: #1e2038;
+    --text-invert: #f2f3f9;
+
+    --border: #e5e8f0;
+    --border-strong: #d3d8e5;
+
+    --text: #151922;
+    --text-muted: #4d5567;
+    --text-subtle: #5c657a;
+
+    /*
+     * Accent for text and icons, kept separate from the brand fill.
+     * brand-600 is the right colour to *paint with* but far too dark to read
+     * on a dark surface, so the accent flips up the ramp in dark mode while
+     * `bg-brand-600` stays put. Use `text-accent`, never `text-brand-600`.
+     */
+    --accent: var(--color-brand-600);
+    --accent-hover: var(--color-brand-700);
+
+    /*
+     * Status colours for *text*, and for the same reason the accent exists:
+     * a palette step chosen to read on white is unreadable on near-black.
+     * Tailwind's `text-red-600` measures 3.78:1 on the dark card surface —
+     * below the 4.5:1 floor — and it is used for overdue balances, which is
+     * precisely the number a business owner must not have to squint at.
+     *
+     * Use `text-negative` / `text-positive` / `text-warning`, never the raw
+     * palette class, for anything that carries meaning rather than decoration.
+     */
+    --text-positive: #047857;
+    --text-negative: #be123c;
+    --text-warning: #a16207;
+    --text-info: #0369a1;
+
+    --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03);
+    --shadow-raised: 0 4px 12px -2px rgb(16 24 40 / 0.08), 0 2px 6px -2px rgb(16 24 40 / 0.05);
+    --shadow-lifted: 0 18px 38px -12px rgb(16 24 40 / 0.18), 0 6px 14px -6px rgb(16 24 40 / 0.08);
+    --shadow-brand: 0 8px 20px -6px rgb(91 69 230 / 0.35);
+
     color-scheme: light;
   }
 
   html.dark {
-    --surface: var(--color-ink-950);
-    --surface-muted: #10131a;
-    --surface-raised: var(--color-ink-900);
-    --border: #232833;
-    --border-strong: #2f3644;
-    --text: var(--color-ink-50);
-    --text-muted: var(--color-ink-400);
-    --text-subtle: var(--color-ink-500);
+    --surface: #14161f;
+    --surface-muted: #0d0f16;
+    --surface-raised: #1b1e2a;
+    --surface-sunken: #0a0c12;
+    --surface-invert: #1b1e2a;
+    --surface-invert-raised: #23273a;
+    --text-invert: #f2f3f9;
+
+    --border: #262a38;
+    --border-strong: #333949;
+
+    --text: #eef0f6;
+    --text-muted: #a3abbd;
+    --text-subtle: #8b93a6;
+
+    --accent: var(--color-brand-300);
+    --accent-hover: var(--color-brand-200);
+
+    /* Same hues, moved up the ramp until they clear 4.5:1 on --surface. */
+    --text-positive: #4ade80;
+    --text-negative: #ff8f9c;
+    --text-warning: #fcd34d;
+    --text-info: #7dd3fc;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-raised: 0 4px 14px -2px rgb(0 0 0 / 0.5);
+    --shadow-lifted: 0 18px 38px -12px rgb(0 0 0 / 0.6);
+    --shadow-brand: 0 8px 22px -6px rgb(91 69 230 / 0.5);
+
     color-scheme: dark;
   }
 
@@ -72,18 +155,62 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* Theme swap should feel like a dimmer, not a page reload. */
+    transition:
+      background-color var(--duration-base) var(--ease-smooth),
+      color var(--duration-base) var(--ease-smooth);
   }
 
-  /* Visible focus for keyboard users; suppressed for pointer interaction. */
+  /*
+   * The theme toggle sets `.theme-switching` for one frame group, which lets
+   * every surface cross-fade together instead of each transitioning on its own
+   * schedule. Removed straight after, so it never slows ordinary interaction.
+   */
+  html.theme-switching * {
+    transition:
+      background-color var(--duration-base) var(--ease-smooth),
+      border-color var(--duration-base) var(--ease-smooth),
+      color var(--duration-base) var(--ease-smooth),
+      fill var(--duration-base) var(--ease-smooth) !important;
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-brand-500);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 
   ::selection {
     background: var(--color-brand-200);
     color: var(--color-ink-900);
+  }
+  html.dark ::selection {
+    background: var(--color-brand-700);
+    color: #fff;
+  }
+
+  /* Slim, themed scrollbars — the default light scrollbar on a dark panel is
+     the most common tell that a dark mode was retrofitted. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-subtle);
+    background-clip: content-box;
   }
 }
 
@@ -94,17 +221,56 @@
   .surface-raised {
     background: var(--surface-raised);
   }
+  .surface-sunken {
+    background: var(--surface-sunken);
+  }
   .muted {
     color: var(--text-muted);
   }
   .subtle {
     color: var(--text-subtle);
   }
+  .text-accent {
+    color: var(--accent);
+  }
+  .hover\:text-accent:hover {
+    color: var(--accent);
+  }
+  .group:hover .group-hover\:text-accent {
+    color: var(--accent);
+  }
+  .border-accent {
+    border-color: var(--accent);
+  }
+
+  /* Semantic status text. Theme-aware by construction — see the token block. */
+  .text-positive {
+    color: var(--text-positive);
+  }
+  .text-negative {
+    color: var(--text-negative);
+  }
+  .text-warning {
+    color: var(--text-warning);
+  }
+  .text-info {
+    color: var(--text-info);
+  }
 
   /* Numeric columns line up only with tabular figures. */
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum';
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-raised {
+    box-shadow: var(--shadow-raised);
+  }
+  .shadow-lifted {
+    box-shadow: var(--shadow-lifted);
   }
 
   /*
@@ -123,15 +289,88 @@
   .chart-frame .recharts-surface {
     max-width: 100%;
   }
+
+  /* Deep panel, used for feature sections and the AI surface. */
+  .panel-invert {
+    background: var(--surface-invert);
+    color: var(--text-invert);
+  }
+  .panel-invert .muted {
+    color: #a8aecb;
+  }
+  .panel-invert .subtle {
+    color: #868db0;
+  }
+
+  /* Interactive lift — the reference language is soft, responsive elevation. */
+  .lift {
+    transition:
+      transform var(--duration-base) var(--ease-out-soft),
+      box-shadow var(--duration-base) var(--ease-out-soft),
+      border-color var(--duration-base) var(--ease-smooth);
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-raised);
+  }
+  .lift:active {
+    transform: translateY(0);
+    transition-duration: var(--duration-fast);
+  }
+
+  .press {
+    transition:
+      transform var(--duration-fast) var(--ease-smooth),
+      background-color var(--duration-fast) var(--ease-smooth),
+      color var(--duration-fast) var(--ease-smooth),
+      border-color var(--duration-fast) var(--ease-smooth),
+      box-shadow var(--duration-fast) var(--ease-smooth);
+  }
+  .press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Motion                                                                      */
+/* -------------------------------------------------------------------------- */
 
 @keyframes nexa-fade-up {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nexa-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nexa-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nexa-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
     transform: none;
   }
 }
@@ -142,27 +381,106 @@
   }
 }
 
-.animate-fade-up {
-  animation: nexa-fade-up 0.24s ease-out both;
+@keyframes nexa-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(91 69 230 / 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgb(91 69 230 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(91 69 230 / 0);
+  }
 }
+
+@keyframes nexa-draw {
+  from {
+    stroke-dashoffset: var(--dash, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-fade-up {
+  animation: nexa-fade-up var(--duration-slow) var(--ease-out-soft) both;
+}
+.animate-fade-in {
+  animation: nexa-fade-in var(--duration-base) var(--ease-smooth) both;
+}
+.animate-scale-in {
+  animation: nexa-scale-in var(--duration-base) var(--ease-spring) both;
+}
+.animate-slide-up {
+  animation: nexa-slide-up var(--duration-base) var(--ease-out-soft) both;
+}
+.animate-pulse-ring {
+  animation: nexa-pulse-ring 2s var(--ease-smooth) infinite;
+}
+
+/*
+ * Stagger utility. Children appear in sequence rather than all at once, which
+ * makes a dense dashboard read as "assembling" instead of "flashing".
+ * Capped at 12 so a long list never delays its tail into feeling broken.
+ */
+.stagger > * {
+  animation: nexa-fade-up var(--duration-slow) var(--ease-out-soft) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(6) { animation-delay: 225ms; }
+.stagger > *:nth-child(7) { animation-delay: 270ms; }
+.stagger > *:nth-child(8) { animation-delay: 315ms; }
+.stagger > *:nth-child(n + 9) { animation-delay: 360ms; }
 
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--surface-muted);
+  background: var(--surface-sunken);
 }
 .skeleton::after {
   content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
-  animation: nexa-shimmer 1.4s infinite;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  animation: nexa-shimmer 1.6s var(--ease-smooth) infinite;
 }
 html.dark .skeleton::after {
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
 }
 
+/* Recharts inherits none of our tokens; nudge the pieces that read wrong. */
+.recharts-cartesian-grid line {
+  stroke: var(--border);
+}
+.recharts-tooltip-wrapper {
+  outline: none;
+  transition: transform var(--duration-fast) var(--ease-smooth) !important;
+}
+.recharts-default-legend {
+  font-size: 12.5px;
+}
+/*
+ * Recharts colours legend labels with the series colour, which puts amber and
+ * emerald text at ~2:1 on a light surface. The swatch already carries the
+ * colour, so the label reverts to body text.
+ */
+.recharts-legend-item-text {
+  color: var(--text-muted) !important;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--text-subtle);
+}
+
+/**
+ * Motion is decoration, never information. Anyone who has asked their system
+ * to reduce motion gets the same product with the movement removed — not a
+ * degraded one.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -170,5 +488,25 @@ html.dark .skeleton::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover {
+    transform: none;
+  }
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media print {
+  .print\:hidden,
+  nav,
+  aside,
+  header {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
   }
 }

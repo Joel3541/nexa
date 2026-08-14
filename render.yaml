@@ -1,0 +1,83 @@
+# ---------------------------------------------------------------------------
+# NEXA on Render — https://render.com/docs/blueprint-spec
+#
+# Deploy: push this repo to GitHub, then New → Blueprint and point it here.
+# Render provisions the database, builds the Dockerfile, and wires DATABASE_URL
+# automatically. The only values you must set by hand are the ones that are
+# secrets: AI_API_KEY, and payment/SMTP credentials if you use them.
+# ---------------------------------------------------------------------------
+
+databases:
+  - name: nexa-db
+    databaseName: nexa
+    user: nexa
+    # Free tier expires after 90 days; move to `starter` before running a real
+    # business on it. Losing a production database to a plan expiry is not a
+    # theoretical risk.
+    plan: free
+
+services:
+  - type: web
+    name: nexa
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: 4000
+      - key: DATABASE_DRIVER
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexa-db
+          property: connectionString
+
+      # Generated once by Render and kept stable across deploys. Rotating this
+      # invalidates every active session, which is the intended behaviour if a
+      # leak is ever suspected.
+      - key: AUTH_SECRET
+        generateValue: true
+
+      # Render terminates TLS, so cookies must be Secure.
+      - key: COOKIE_SECURE
+        value: true
+      # Same-origin deployment: the API serves the client, so this is its own URL.
+      - key: WEB_ORIGIN
+        fromService:
+          name: nexa
+          type: web
+          property: host
+
+      - key: AI_PROVIDER
+        value: mock # switch to `anthropic` once AI_API_KEY is set
+      - key: AI_API_KEY
+        sync: false # set in the dashboard; never committed
+      - key: AI_MODEL
+        value: claude-opus-5
+      - key: AI_MONTHLY_BUDGET_CENTS
+        value: 0
+
+      - key: EMAIL_PROVIDER
+        value: console
+      - key: EMAIL_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: PAYMENT_PROVIDER_KEY
+        sync: false
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false
+
+      # Demo data is for evaluating NEXA, not for a live workspace.
+      - key: SEED_DEMO_DATA
+        value: false

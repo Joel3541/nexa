@@ -6,6 +6,7 @@ import { App } from './App';
 import { ToastProvider } from './components/ui/feedback';
 import { ApiRequestError } from './lib/api';
 import { SessionProvider } from './store/session';
+import { ThemeProvider } from './store/theme';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -24,14 +25,16 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <SessionProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </SessionProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <SessionProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </SessionProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

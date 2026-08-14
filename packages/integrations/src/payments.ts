@@ -1,61 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { env } from '@nexa/config';
+import {
+  PaymentProviderError,
+  type PaymentIntentRequest,
+  type PaymentProvider,
+  type PaymentResult,
+  type RefundRequest,
+} from './payment-contract.js';
+import { PaystackProvider } from './paystack.js';
+import { StripeProvider } from './stripe.js';
 
 /**
- * Payment provider abstraction.
+ * Payment provider registry.
  *
- * Business logic never imports Stripe/Paystack/Flutterwave directly. It depends
- * on this interface, so adding a market's payment rail is a new adapter plus a
- * config value — no changes to orders, invoices or reporting.
+ * Business logic never imports Stripe or Paystack directly. It depends on the
+ * `PaymentProvider` contract, so adding a market's payment rail is a new
+ * adapter plus a config value — no changes to orders, invoices or reporting.
  *
- * The MVP ships only `MockPaymentProvider`. It is explicitly a *development*
- * adapter: every result it returns is flagged `simulated: true` and the UI
- * labels it as such. NEXA never claims that money moved when it did not.
+ * `MockPaymentProvider` is explicitly a *development* adapter: every result it
+ * returns is flagged `simulated: true` and the UI labels it as such. NEXA never
+ * claims that money moved when it did not.
  */
-
-export interface PaymentIntentRequest {
-  /** Integer minor units, matching the business currency. */
-  amountMinor: number;
-  currency: string;
-  reference: string;
-  description?: string;
-  customer?: { name?: string; email?: string | null; phone?: string | null };
-  /** Rail hint, e.g. 'mobile_money' | 'card' | 'bank_transfer'. */
-  method?: string;
-  metadata?: Record<string, string>;
-}
-
-export interface PaymentResult {
-  id: string;
-  provider: string;
-  status: 'pending' | 'succeeded' | 'failed' | 'refunded';
-  amountMinor: number;
-  currency: string;
-  reference: string;
-  /** Where to send the payer to complete the payment, when applicable. */
-  redirectUrl?: string;
-  /** True when no real money movement occurred. */
-  simulated: boolean;
-  raw?: Record<string, unknown>;
-  failureReason?: string;
-}
-
-export interface RefundRequest {
-  paymentId: string;
-  amountMinor: number;
-  reason?: string;
-}
-
-export interface PaymentProvider {
-  readonly name: string;
-  readonly simulated: boolean;
-  /** Rails this provider can service, used to filter options per country. */
-  supportedMethods(country: string): string[];
-  createPayment(request: PaymentIntentRequest): Promise<PaymentResult>;
-  verifyPayment(paymentId: string): Promise<PaymentResult>;
-  refundPayment(request: RefundRequest): Promise<PaymentResult>;
-  getPaymentStatus(paymentId: string): Promise<PaymentResult['status']>;
-}
 
 /**
  * Deterministic in-memory provider for development and tests.
@@ -105,23 +70,18 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 }
 
-export class PaymentProviderError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'PaymentProviderError';
-  }
-}
-
 /**
- * Adapters for live providers land here. They are intentionally absent rather
- * than stubbed: a stub that silently no-ops would let the product pretend a
- * payment succeeded, which is exactly what we refuse to do.
+ * Live adapters. Each factory is only invoked for the configured provider, and
+ * each adapter validates its credentials in its constructor — so a workspace on
+ * `mock` never trips a check for keys it does not have.
+ *
+ * There is deliberately no stub adapter: one that silently reported success
+ * would let the product claim money moved when it did not.
  */
 const REGISTRY: Record<string, () => PaymentProvider> = {
   mock: () => new MockPaymentProvider(),
+  paystack: () => new PaystackProvider(),
+  stripe: () => new StripeProvider(),
 };
 
 let cached: PaymentProvider | null = null;

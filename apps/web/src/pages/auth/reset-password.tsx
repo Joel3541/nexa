@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
         title="That link isn't valid"
         subtitle="Reset links expire after an hour and can only be used once."
         footer={
-          <Link to="/forgot-password" className="font-medium text-brand-600 hover:underline">
+          <Link to="/forgot-password" className="font-medium text-accent hover:underline">
             Request a new link
           </Link>
         }
@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
     <AuthLayout title="Choose a new password" subtitle="You'll be signed out of all devices for safety.">
       <form onSubmit={submit} className="space-y-4" noValidate>
         {error && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-red-700">
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-negative">
             {error}
           </div>
         )}

@@ -34,7 +34,7 @@ export function AuthLayout({
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_50%_at_60%_20%,var(--color-brand-100),transparent)]"
         />
         <div className="relative flex h-full flex-col justify-center px-14">
-          <p className="text-[13px] font-semibold tracking-wide text-brand-600 uppercase">NEXA Morning Brief</p>
+          <p className="text-[13px] font-semibold tracking-wide text-accent uppercase">NEXA Morning Brief</p>
           <p className="mt-4 text-[22px] leading-snug font-semibold tracking-[-0.01em]">
             “Revenue is down 27% this period, mostly because Glow Serum stocked out on the 12th. You're owed
             GH₵3,745 across 28 overdue invoices — that's the fastest cash you can collect today.”

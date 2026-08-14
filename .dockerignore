@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.gitignore
+.pgdata
+.pgdata-test
+.env
+.env.test
+.env.*.local
+*.log
+docs
+tests
+README.md
+Dockerfile
+.dockerignore
+docker-compose.yml

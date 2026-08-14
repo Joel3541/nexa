@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Shared packages are consumed as TypeScript source by the apps, so they are checked as one project rather than built independently.",
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["*/src/**/*.ts"],
+  "exclude": ["*/dist/**"]
+}

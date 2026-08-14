@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------------
+# NEXA — self-hosting with Docker Compose.
+#
+#   cp .env.example .env    # then set AUTH_SECRET and COOKIE_SECURE
+#   docker compose up -d
+#
+# This is the "real" configuration: PostgreSQL in its own container, NEXA
+# talking to it over the network. PGlite is excellent for development and CI,
+# but it is in-process — a container restart with PGlite means the database is
+# whatever survived on the volume, and nothing can connect to it for a backup.
+# ---------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nexa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: nexa
+    volumes:
+      - nexa-db:/var/lib/postgresql/data
+    healthcheck:
+      # NEXA must not start migrating against a server that is still booting.
+      test: ['CMD-SHELL', 'pg_isready -U nexa -d nexa']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgresql://nexa:${POSTGRES_PASSWORD}@db:5432/nexa
+      # Same origin serves the client, so this is the public URL of *this* app.
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:4000}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET to a 32+ char random value}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-claude-opus-5}
+      AI_MONTHLY_BUDGET_CENTS: ${AI_MONTHLY_BUDGET_CENTS:-0}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-nexa@example.com}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      PAYMENT_PROVIDER_KEY: ${PAYMENT_PROVIDER_KEY:-}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
+      PAYMENT_CALLBACK_URL: ${PAYMENT_CALLBACK_URL:-}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+    ports:
+      - '${APP_PORT:-4000}:4000'
+
+volumes:
+  nexa-db:

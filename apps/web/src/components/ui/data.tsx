@@ -83,7 +83,7 @@ export function DataTable<T extends { id: string }>({
                       {/* The link covers the first cell so the whole row is
                           reachable by keyboard without nesting interactives. */}
                       {href && index === 0 ? (
-                        <Link to={href} className="block font-medium hover:text-brand-600">
+                        <Link to={href} className="block font-medium hover:text-accent">
                           {content}
                         </Link>
                       ) : (
@@ -174,8 +174,8 @@ export function StatTile({
       <p
         className={cx(
           'mt-1.5 text-[26px] leading-none font-semibold tnum',
-          tone === 'positive' && 'text-emerald-600',
-          tone === 'negative' && 'text-red-600',
+          tone === 'positive' && 'text-positive',
+          tone === 'negative' && 'text-negative',
         )}
       >
         {value}
@@ -191,8 +191,15 @@ export function StatTile({
 
   if (href) {
     return (
-      <Link to={href} className="block">
-        <Card className="h-full transition-shadow hover:shadow-md">{body}</Card>
+      <Link to={href} className="group block focus-visible:outline-none">
+        {/*
+          `lift` raises the card on hover and settles it on press. Only the
+          clickable tile gets it — a tile that moves under the cursor but does
+          nothing when clicked is a promise the interface does not keep.
+        */}
+        <Card className="lift h-full group-focus-visible:ring-2 group-focus-visible:ring-[var(--accent)]">
+          {body}
+        </Card>
       </Link>
     );
   }
@@ -253,7 +260,7 @@ export function Tabs<T extends string>({
           className={cx(
             '-mb-px shrink-0 border-b-2 px-3 py-2.5 text-[13.5px] font-medium transition-colors',
             active === tab.id
-              ? 'border-brand-600 text-brand-700 dark:text-brand-300'
+              ? 'border-brand-600 text-accent'
               : 'border-transparent muted hover:text-[var(--text)]',
           )}
         >

@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
         title="Check your email"
         subtitle="If that address has a NEXA account, a reset link is on its way. The link expires in one hour."
         footer={
-          <Link to="/sign-in" className="font-medium text-brand-600 hover:underline">
+          <Link to="/sign-in" className="font-medium text-accent hover:underline">
             Back to sign in
           </Link>
         }
@@ -48,14 +48,14 @@ export default function ForgotPasswordPage() {
       title="Reset your password"
       subtitle="Enter your email and we'll send you a link."
       footer={
-        <Link to="/sign-in" className="font-medium text-brand-600 hover:underline">
+        <Link to="/sign-in" className="font-medium text-accent hover:underline">
           Back to sign in
         </Link>
       }
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
         {error && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-red-700">
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13.5px] text-negative">
             {error}
           </div>
         )}

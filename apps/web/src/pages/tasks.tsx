@@ -121,7 +121,8 @@ export default function TasksPage() {
                     onChange={(event) =>
                       update.mutate({ id: task.id, patch: { status: event.target.checked ? 'completed' : 'todo' } })
                     }
-                    className="mt-1 size-4 shrink-0 rounded border-[var(--border-strong)] text-brand-600"
+                    style={{ accentColor: 'var(--color-brand-600)' }}
+                    className="mt-1 size-4 shrink-0 cursor-pointer rounded border-[var(--border-strong)] transition-transform duration-[var(--duration-fast)] active:scale-90"
                     aria-label={`Mark "${task.title}" complete`}
                   />
                   <div className="min-w-0 flex-1">
@@ -131,17 +132,17 @@ export default function TasksPage() {
                     {task.description && <p className="mt-0.5 text-[13px] muted">{task.description}</p>}
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] subtle">
                       {task.customerName && (
-                        <Link to={`/app/customers/${task.customerId}`} className="hover:text-brand-600">
+                        <Link to={`/app/customers/${task.customerId}`} className="hover:text-accent">
                           {task.customerName}
                         </Link>
                       )}
                       {task.dueDate && (
-                        <span className={task.isOverdue ? 'font-medium text-red-600' : ''}>
+                        <span className={task.isOverdue ? 'font-medium text-negative' : ''}>
                           Due {relativeTime(task.dueDate)}
                         </span>
                       )}
                       {task.createdBySource === 'ai' && (
-                        <span className="inline-flex items-center gap-1 text-brand-600">
+                        <span className="inline-flex items-center gap-1 text-accent">
                           <SparkIcon className="size-3" /> Created by NEXA AI
                         </span>
                       )}

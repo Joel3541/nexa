@@ -54,7 +54,7 @@ export default function SignUpPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/sign-in" className="font-medium text-brand-600 hover:underline">
+          <Link to="/sign-in" className="font-medium text-accent hover:underline">
             Sign in
           </Link>
         </>
@@ -104,7 +104,7 @@ export default function SignUpPage() {
           />
           <ul className="mt-2 space-y-1">
             {checks.map((check) => (
-              <li key={check.label} className={cx('flex items-center gap-1.5 text-[12.5px]', check.ok ? 'text-emerald-600' : 'subtle')}>
+              <li key={check.label} className={cx('flex items-center gap-1.5 text-[12.5px]', check.ok ? 'text-positive' : 'subtle')}>
                 <span aria-hidden="true">{check.ok ? '✓' : '○'}</span>
                 {check.label}
               </li>

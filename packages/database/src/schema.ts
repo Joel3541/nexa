@@ -748,6 +748,52 @@ export const campaigns = pgTable(
 );
 
 /**
+ * A hosted-checkout attempt: one row per payment link handed to a payer.
+ *
+ * This table is what makes payment webhooks safe. It exists for two reasons
+ * that a "just look up the invoice" design cannot satisfy:
+ *
+ *  1. **Identity without leaking.** The gateway only ever sends back the
+ *     `reference` we gave it. Resolving that here means the reference can be an
+ *     opaque token rather than an internal invoice UUID printed on a payer's
+ *     receipt.
+ *  2. **Idempotency.** Gateways deliver a webhook more than once, by design and
+ *     on retry. `settledAt` is the marker that says "this money is already
+ *     recorded" — without it, a redelivered `charge.success` would insert a
+ *     second payment and mark the invoice overpaid.
+ */
+export const paymentLinks = pgTable(
+  'payment_links',
+  {
+    id: pk(),
+    businessId: uuid('business_id')
+      .notNull()
+      .references(() => businesses.id, { onDelete: 'cascade' }),
+    invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }),
+    orderId: uuid('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+    /** Opaque token shared with the gateway. Unique across the whole system. */
+    reference: varchar('reference', { length: 120 }).notNull().unique(),
+    provider: varchar('provider', { length: 40 }).notNull(),
+    providerRef: varchar('provider_ref', { length: 160 }),
+    amountMinor: moneyCol('amount_minor'),
+    currency: varchar('currency', { length: 3 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    checkoutUrl: text('checkout_url'),
+    /** Set exactly once, when the payment row is written. The dedup guard. */
+    settledAt: timestamp('settled_at', { withTimezone: true }),
+    failureReason: text('failure_reason'),
+    createdByUserId: uuid('created_by_user_id'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('payment_links_business_idx').on(t.businessId, t.createdAt),
+    index('payment_links_invoice_idx').on(t.invoiceId),
+  ],
+);
+
+/**
  * Every outbound message is recorded here before a channel adapter touches it.
  * In development the console adapter marks rows `simulated` — the UI shows them
  * as simulated rather than claiming a real delivery happened.
@@ -817,10 +863,23 @@ export const aiMessages = pgTable(
     model: varchar('model', { length: 60 }),
     inputTokens: integer('input_tokens'),
     outputTokens: integer('output_tokens'),
+    cacheReadTokens: integer('cache_read_tokens'),
+    cacheWriteTokens: integer('cache_write_tokens'),
+    /**
+     * Estimated spend for this turn in integer micro-USD (1 USD = 1e6).
+     * Estimated, not billed: the provider's invoice is authoritative. Stored so
+     * a business can see its own AI spend without an external lookup, and so
+     * the monthly budget guard has something to sum.
+     */
+    costMicros: integer('cost_micros'),
     latencyMs: integer('latency_ms'),
     createdAt: createdAt(),
   },
-  (t) => [index('ai_messages_conversation_idx').on(t.conversationId, t.createdAt)],
+  (t) => [
+    index('ai_messages_conversation_idx').on(t.conversationId, t.createdAt),
+    // Drives the month-to-date spend rollup, which filters by business and date.
+    index('ai_messages_business_created_idx').on(t.businessId, t.createdAt),
+  ],
 );
 
 /**
@@ -1003,6 +1062,7 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type PaymentLink = typeof paymentLinks.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;

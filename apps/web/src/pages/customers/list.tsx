@@ -166,7 +166,7 @@ export default function CustomersPage() {
                     secondary: true,
                     render: (row) =>
                       row.outstandingMinor > 0 ? (
-                        <span className="font-medium text-red-600">{money(row.outstandingMinor, currency, locale)}</span>
+                        <span className="font-medium text-negative">{money(row.outstandingMinor, currency, locale)}</span>
                       ) : (
                         <span className="subtle">—</span>
                       ),

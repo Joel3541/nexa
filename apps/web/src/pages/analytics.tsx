@@ -258,7 +258,7 @@ export default function AnalyticsPage() {
                           <td className="px-4 py-2.5">{row.name}</td>
                           <td className="px-4 py-2.5 text-right tnum">{row.unitsSold}</td>
                           <td className="px-4 py-2.5 text-right tnum">{fmt(row.revenueMinor)}</td>
-                          <td className="px-4 py-2.5 text-right tnum text-emerald-600">{fmt(row.profitMinor)}</td>
+                          <td className="px-4 py-2.5 text-right tnum text-positive">{fmt(row.profitMinor)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -289,7 +289,7 @@ export default function AnalyticsPage() {
                 <p className="mt-1 muted">
                   {fmt(data.outstanding.totalMinor)} across {data.outstanding.invoiceCount} open invoices.{' '}
                   {data.outstanding.overdueCount > 0 ? (
-                    <span className="text-red-600">
+                    <span className="text-negative">
                       {fmt(data.outstanding.overdueMinor)} of it is overdue ({data.outstanding.overdueCount} invoices).
                     </span>
                   ) : (

@@ -80,10 +80,17 @@ export function titleCase(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-/** Deterministic pastel from a string — used for customer/product avatars. */
+/**
+ * Deterministic tint from a string — used for customer and product avatars.
+ *
+ * The foreground is deliberately dark (24% lightness): initials are small text
+ * and must clear 4.5:1 against the tint at every hue. Yellows and cyans are the
+ * binding constraint, so the value is set for the worst case rather than the
+ * average one.
+ */
 export function avatarTint(seed: string): { bg: string; fg: string } {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   const hue = hash % 360;
-  return { bg: `hsl(${hue} 68% 92%)`, fg: `hsl(${hue} 55% 32%)` };
+  return { bg: `hsl(${hue} 70% 92%)`, fg: `hsl(${hue} 62% 24%)` };
 }

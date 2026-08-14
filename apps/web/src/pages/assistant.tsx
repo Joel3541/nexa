@@ -142,7 +142,7 @@ export default function AssistantPage() {
       {messages.length === 0 && (
         <Card className="mb-4">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-900/40">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-accent dark:bg-brand-900/40">
               <SparkIcon />
             </span>
             <div className="min-w-0">
@@ -231,7 +231,7 @@ function AssistantMessage({ message }: { message: AiMessageView }) {
   return (
     <Card>
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-900/40">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-accent dark:bg-brand-900/40">
           <SparkIcon className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -267,7 +267,7 @@ function AssistantMessage({ message }: { message: AiMessageView }) {
                 <ul className="mt-2 space-y-1.5 border-l-2 border-[var(--border)] pl-3">
                   {message.toolCalls.map((call) => (
                     <li key={call.id} className="text-[12px] muted">
-                      <span className={cx('font-medium', call.status === 'error' && 'text-red-600')}>{call.label}</span>
+                      <span className={cx('font-medium', call.status === 'error' && 'text-negative')}>{call.label}</span>
                       {' — '}
                       {call.summary}
                       <span className="subtle"> ({call.durationMs}ms)</span>

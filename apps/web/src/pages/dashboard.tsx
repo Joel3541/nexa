@@ -72,10 +72,13 @@ export default function DashboardPage() {
       {isLoading || !data ? (
         <DashboardSkeleton />
       ) : (
-        <div className="space-y-5">
+        // `stagger` walks direct children in ~45ms apart, so the eye lands on
+        // the brief, then the headline numbers, then the detail — the order
+        // they should be read in.
+        <div className="stagger space-y-5">
           <BriefCard brief={data.brief} />
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatTile
               label="Revenue"
               value={money(data.finance.revenue.value, currency, locale)}
@@ -172,7 +175,7 @@ function BriefCard({ brief }: { brief: DailyBrief }) {
     <Card className="border-brand-200 bg-gradient-to-br from-brand-50/80 to-transparent dark:border-brand-900 dark:from-brand-950/40">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-brand-600 uppercase">
+          <p className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-accent uppercase">
             <SparkIcon className="size-3.5" />
             NEXA Morning Brief
           </p>
@@ -194,7 +197,7 @@ function BriefCard({ brief }: { brief: DailyBrief }) {
               <span>{highlight.title}</span>{' '}
               <span className="muted">{highlight.detail}</span>
               {highlight.actionHref && (
-                <Link to={highlight.actionHref} className="ml-1.5 font-medium whitespace-nowrap text-brand-600 hover:underline">
+                <Link to={highlight.actionHref} className="ml-1.5 font-medium whitespace-nowrap text-accent hover:underline">
                   {highlight.actionLabel} →
                 </Link>
               )}
@@ -205,7 +208,7 @@ function BriefCard({ brief }: { brief: DailyBrief }) {
 
       {brief.recommendation && (
         <div className="mt-4 rounded-xl border border-brand-200 bg-[var(--surface)] p-4 dark:border-brand-800">
-          <p className="text-[12px] font-semibold tracking-wide text-brand-600 uppercase">Recommended action</p>
+          <p className="text-[12px] font-semibold tracking-wide text-accent uppercase">Recommended action</p>
           <p className="mt-1.5 text-[15px] font-medium">{brief.recommendation.title}</p>
           <p className="mt-1 text-[13.5px] muted">{brief.recommendation.rationale}</p>
           <Link to={brief.recommendation.actionHref} className="mt-3 inline-block">
@@ -241,7 +244,7 @@ function RevenueChart({ data }: { data: DashboardResponse }) {
         title="Revenue and expenses"
         subtitle={data.range.label}
         action={
-          <Link to="/app/analytics" className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to="/app/analytics" className="text-[13px] font-medium text-accent hover:underline">
             Full analytics →
           </Link>
         }
@@ -290,10 +293,10 @@ function RevenueChart({ data }: { data: DashboardResponse }) {
 
 function HealthCard({ health }: { health: BusinessHealth }) {
   const gradeTone = {
-    excellent: 'text-emerald-600',
-    good: 'text-emerald-600',
-    fair: 'text-amber-600',
-    at_risk: 'text-red-600',
+    excellent: 'text-positive',
+    good: 'text-positive',
+    fair: 'text-warning',
+    at_risk: 'text-negative',
   }[health.grade];
 
   const statusColor = { good: 'bg-emerald-500', watch: 'bg-amber-500', risk: 'bg-red-500' } as const;
@@ -341,7 +344,7 @@ function OverdueCard({ rows }: { rows: DashboardResponse['overdueInvoices'] }) {
         title="Overdue invoices"
         subtitle={rows.length === 0 ? 'Nothing overdue' : 'Oldest first'}
         action={
-          <Link to="/app/invoices?overdue=1" className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to="/app/invoices?overdue=1" className="text-[13px] font-medium text-accent hover:underline">
             View all →
           </Link>
         }
@@ -352,14 +355,14 @@ function OverdueCard({ rows }: { rows: DashboardResponse['overdueInvoices'] }) {
         <ul className="divide-y divide-[var(--border)]">
           {rows.map((invoice) => (
             <li key={invoice.id}>
-              <Link to={`/app/invoices/${invoice.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-brand-600">
+              <Link to={`/app/invoices/${invoice.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-accent">
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-medium">{invoice.customerName}</p>
                   <p className="text-[12.5px] subtle">
                     {invoice.number} · {invoice.daysOverdue} days overdue
                   </p>
                 </div>
-                <span className="shrink-0 text-[14px] font-semibold tnum text-red-600">
+                <span className="shrink-0 text-[14px] font-semibold tnum text-negative">
                   {money(invoice.balanceMinor, currency, locale)}
                 </span>
               </Link>
@@ -378,7 +381,7 @@ function LowStockCard({ rows }: { rows: DashboardResponse['lowStock'] }) {
         title="Stock needing attention"
         subtitle={rows.length === 0 ? 'All good' : 'At or below minimum'}
         action={
-          <Link to="/app/products?lowStock=1" className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to="/app/products?lowStock=1" className="text-[13px] font-medium text-accent hover:underline">
             View all →
           </Link>
         }
@@ -389,7 +392,7 @@ function LowStockCard({ rows }: { rows: DashboardResponse['lowStock'] }) {
         <ul className="divide-y divide-[var(--border)]">
           {rows.map((product) => (
             <li key={product.id}>
-              <Link to={`/app/products/${product.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-brand-600">
+              <Link to={`/app/products/${product.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-accent">
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-medium">{product.name}</p>
                   <p className="text-[12.5px] subtle">
@@ -431,7 +434,7 @@ function TopListCard({
         title={title}
         subtitle={subtitle}
         action={
-          <Link to={href} className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to={href} className="text-[13px] font-medium text-accent hover:underline">
             View all →
           </Link>
         }
@@ -442,7 +445,7 @@ function TopListCard({
         <ol className="divide-y divide-[var(--border)]">
           {rows.map((row, index) => (
             <li key={row.id}>
-              <Link to={row.href} className="flex items-center gap-3 py-2.5 hover:text-brand-600">
+              <Link to={row.href} className="flex items-center gap-3 py-2.5 hover:text-accent">
                 <span className="w-4 shrink-0 text-[12.5px] subtle tnum">{index + 1}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium">{row.title}</p>
@@ -464,7 +467,7 @@ function UpcomingTasks({ rows }: { rows: DashboardResponse['upcoming']['tasks'] 
       <CardHeader
         title="Open tasks"
         action={
-          <Link to="/app/tasks" className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to="/app/tasks" className="text-[13px] font-medium text-accent hover:underline">
             All tasks →
           </Link>
         }
@@ -501,7 +504,7 @@ function UpcomingAppointments({ rows }: { rows: DashboardResponse['upcoming']['a
         title="Coming up"
         subtitle="Next 7 days"
         action={
-          <Link to="/app/appointments" className="text-[13px] font-medium text-brand-600 hover:underline">
+          <Link to="/app/appointments" className="text-[13px] font-medium text-accent hover:underline">
             Calendar →
           </Link>
         }

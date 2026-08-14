@@ -29,6 +29,7 @@ import {
   updateInvoice,
   type InvoiceContext,
 } from '../services/invoices.service.js';
+import { createInvoiceCheckout } from '../services/checkout.service.js';
 
 export const ordersRouter: Router = Router();
 export const invoicesRouter: Router = Router();
@@ -158,6 +159,31 @@ invoicesRouter.post(
   handler(async (req, res) => {
     const input = parse(recordPaymentSchema, req.body);
     res.status(201).json(await recordInvoicePayment(getTenant(req).business.id, param(req, 'id'), input, actor(req)));
+  }),
+);
+
+/**
+ * Creates a hosted payment link for an invoice's outstanding balance.
+ *
+ * The link is returned but the invoice is *not* marked paid — that happens only
+ * when the gateway confirms over a signed webhook. See checkout.service.ts.
+ */
+invoicesRouter.post(
+  '/:id/checkout',
+  requirePermission('invoices:write'),
+  handler(async (req, res) => {
+    const { business } = getTenant(req);
+    const auth = getAuth(req);
+    const link = await createInvoiceCheckout(business, param(req, 'id'), {
+      userId: auth.user.id,
+      userName: auth.user.fullName,
+    });
+    res.status(201).json({
+      ...link,
+      message: link.simulated
+        ? 'No live payment provider is configured, so this link is simulated — no money can move through it.'
+        : 'Share this link with the customer to collect payment.',
+    });
   }),
 );
 

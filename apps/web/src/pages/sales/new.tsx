@@ -170,7 +170,7 @@ export default function NewSalePage() {
                       <p className="min-w-0 flex-1 text-[13.5px] font-medium">{line.name}</p>
                       <button
                         onClick={() => setLines((current) => current.filter((l) => l.productId !== line.productId))}
-                        className="shrink-0 text-[12px] subtle hover:text-red-600"
+                        className="shrink-0 text-[12px] subtle hover:text-negative"
                         aria-label={`Remove ${line.name}`}
                       >
                         Remove
@@ -209,7 +209,7 @@ export default function NewSalePage() {
                       </span>
                     </div>
                     {line.tracksStock && line.quantity > line.available && (
-                      <p className="mt-1 text-[12px] text-red-600">Only {line.available} in stock.</p>
+                      <p className="mt-1 text-[12px] text-negative">Only {line.available} in stock.</p>
                     )}
                   </li>
                 ))}
@@ -246,7 +246,7 @@ export default function NewSalePage() {
               {discountMinor > 0 && (
                 <div className="flex justify-between">
                   <dt className="muted">Discount</dt>
-                  <dd className="tnum text-red-600">−{money(discountMinor, currency, locale)}</dd>
+                  <dd className="tnum text-negative">−{money(discountMinor, currency, locale)}</dd>
                 </div>
               )}
               {settings?.taxEnabled && (

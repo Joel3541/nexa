@@ -15,8 +15,19 @@ export function getAiProvider(): AiProvider {
   return cached;
 }
 
+/**
+ * Resets the memoised provider so a config change takes effect.
+ *
+ * Used by the verification script, which constructs a provider explicitly and
+ * must not inherit one built during module import.
+ */
+export function resetAiProvider(): void {
+  cached = null;
+}
+
 export function setAiProviderForTesting(provider: AiProvider | null): void {
   cached = provider;
 }
 
 export { MockAiProvider, AnthropicAiProvider };
+

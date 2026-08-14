@@ -1,4 +1,5 @@
 import { env } from '@nexa/config';
+import { SmtpAdapter } from './smtp.js';
 
 /**
  * Outbound communication abstraction (email / SMS / WhatsApp / push).
@@ -56,9 +57,17 @@ function indent(text: string): string {
     .join('\n');
 }
 
+/**
+ * Adapters are memoised because a real transport owns a connection pool.
+ * Building one per message would open a fresh TCP+TLS handshake for every
+ * reminder in a batch.
+ */
+const instances = new Map<MessageChannel, MessageChannelAdapter>();
+
 const ADAPTERS: Record<MessageChannel, () => MessageChannelAdapter> = {
   email: () => {
     if (env.EMAIL_PROVIDER === 'console') return new ConsoleAdapter('email');
+    if (env.EMAIL_PROVIDER === 'smtp') return new SmtpAdapter();
     throw notImplemented('email', env.EMAIL_PROVIDER);
   },
   sms: () => {
@@ -80,7 +89,15 @@ function notImplemented(channel: string, provider: string): Error {
 }
 
 export function getChannelAdapter(channel: MessageChannel): MessageChannelAdapter {
-  return ADAPTERS[channel]();
+  const existing = instances.get(channel);
+  if (existing) return existing;
+  const adapter = ADAPTERS[channel]();
+  instances.set(channel, adapter);
+  return adapter;
+}
+
+export function resetChannelAdaptersForTesting(): void {
+  instances.clear();
 }
 
 /** True when no channel is wired to a real provider — surfaced in the UI. */

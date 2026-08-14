@@ -1,6 +1,7 @@
 import type { AgentDefinition } from './agents.js';
 import { buildSystemPrompt } from './agents.js';
-import type { AiProvider, AiTurn, ToolCallOutcome, ToolCallRequest } from './provider.js';
+import type { AiProvider, AiTurn, StepUsage, ToolCallOutcome, ToolCallRequest } from './provider.js';
+import { addUsage, emptyUsage } from './provider.js';
 import type { ToolRegistry } from './registry.js';
 import type { ActionProposal, ToolContext, ToolDefinition } from './tool.js';
 import { ToolError } from './tool.js';
@@ -45,7 +46,12 @@ export interface TurnResult {
   citations: Array<{ label: string; href: string }>;
   provider: 'mock' | 'anthropic';
   model: string;
-  usage?: { inputTokens?: number; outputTokens?: number };
+  /**
+   * Usage summed across *every* provider round trip in this turn, not just the
+   * final one. A question answered after three tool calls costs four requests;
+   * reporting only the last would understate spend by most of it.
+   */
+  usage: StepUsage;
   latencyMs: number;
   /** The full transport history, persisted so the next turn has continuity. */
   turns: AiTurn[];
@@ -81,6 +87,7 @@ export async function runTurn(options: RunTurnOptions): Promise<TurnResult> {
   const recordedCalls: RecordedToolCall[] = [];
   const proposals: PendingProposal[] = [];
   const citations: Array<{ label: string; href: string }> = [];
+  let usage = emptyUsage();
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration += 1) {
     const step = await provider.step({
@@ -95,6 +102,8 @@ export async function runTurn(options: RunTurnOptions): Promise<TurnResult> {
       },
     });
 
+    usage = addUsage(usage, step.usage);
+
     if (step.type === 'final') {
       turns.push({ role: 'assistant', content: step.text });
       return {
@@ -104,13 +113,18 @@ export async function runTurn(options: RunTurnOptions): Promise<TurnResult> {
         citations: dedupeCitations(citations),
         provider: provider.name,
         model: provider.model,
-        usage: step.usage,
+        usage,
         latencyMs: Date.now() - startedAt,
         turns,
       };
     }
 
-    turns.push({ role: 'assistant', content: step.text ?? '', toolCalls: step.toolCalls });
+    turns.push({
+      role: 'assistant',
+      content: step.text ?? '',
+      toolCalls: step.toolCalls,
+      providerBlocks: step.providerBlocks,
+    });
 
     const outcomes: ToolCallOutcome[] = [];
     for (const request of step.toolCalls) {
@@ -142,6 +156,7 @@ export async function runTurn(options: RunTurnOptions): Promise<TurnResult> {
     citations: dedupeCitations(citations),
     provider: provider.name,
     model: provider.model,
+    usage,
     latencyMs: Date.now() - startedAt,
     turns,
   };

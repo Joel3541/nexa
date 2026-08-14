@@ -9,6 +9,10 @@
   },
   "dependencies": {
     "@nexa/config": "*",
-    "@nexa/types": "*"
+    "@nexa/types": "*",
+    "nodemailer": "^9.0.5"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.1"
   }
 }
