@@ -94,7 +94,34 @@ function weightedPick<T extends { weight: number }>(items: T[]): T {
 const HISTORY_DAYS = 150;
 const RECENT_WINDOW = 30;
 
+/**
+ * Refuses to plant the demo workspace where it would be a back door.
+ *
+ * The demo credentials live in `data.ts`, in the open, so that anyone can
+ * evaluate NEXA in one command. That is only safe while the database is a
+ * local one. On a public install the same convenience becomes a published
+ * username and password for someone's real business, so this refuses rather
+ * than warns — a warning in a deploy log is read after the fact, if ever.
+ *
+ * `SEED_DEMO_DATA=true` is the deliberate override, for a hosted instance that
+ * genuinely is a demo.
+ */
+function assertSeedingIsSafe(): void {
+  if (env.NODE_ENV !== 'production' || env.SEED_DEMO_DATA) return;
+  console.error(
+    '\n[nexa:seed] refusing to seed demo data in production.\n\n' +
+      `  The demo login (${DEMO_OWNER.email}) is published in this repository's\n` +
+      '  source, so seeding a live database would hand anyone who reads it an\n' +
+      '  account on your workspace.\n\n' +
+      '  If this instance really is a public demo, set SEED_DEMO_DATA=true.\n' +
+      '  Otherwise create your first workspace by signing up in the app.\n',
+  );
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
+  assertSeedingIsSafe();
+
   const reset = process.argv.includes('--reset');
   const now = new Date();
 
