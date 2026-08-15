@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { HeroVisual } from '@/components/artwork';
 import { Wordmark } from '@/components/icons';
+import { Reveal } from '@/components/reveal';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge, Button, Card, cx } from '@/components/ui/primitives';
 
 /**
@@ -43,11 +46,15 @@ function TopBar() {
           <a href="#faq" className="hover:text-[var(--text)]">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
+          {/* The toggle lived only inside the app shell, so a visitor who never
+              signed in had no way to switch themes on the page they actually
+              landed on. */}
+          <ThemeToggle compact />
           <Link to="/sign-in">
             <Button variant="ghost" size="sm">Sign in</Button>
           </Link>
           <Link to="/sign-up">
-            <Button variant="primary" size="sm">Start free</Button>
+            <Button variant="primary" size="sm" className="hidden sm:inline-flex">Start free</Button>
           </Link>
         </div>
       </div>
@@ -72,10 +79,22 @@ function Section({
 }) {
   return (
     <section id={id} className={cx('mx-auto max-w-6xl px-5 py-16 sm:py-20', className)}>
-      {eyebrow && <p className="mb-2.5 text-[13px] font-semibold tracking-wide text-accent uppercase">{eyebrow}</p>}
-      <h2 className="max-w-3xl text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] sm:text-[34px]">{title}</h2>
-      {lead && <p className="mt-3.5 max-w-2xl text-[16px] leading-relaxed muted">{lead}</p>}
-      {children && <div className="mt-9">{children}</div>}
+      {/*
+        Every landing section reveals on scroll from here, so the behaviour is
+        consistent by construction rather than remembered at each call site.
+        Heading and body are separate reveals with a small offset: the title
+        settles first, which is the order the section is read in anyway.
+      */}
+      <Reveal>
+        {eyebrow && <p className="mb-2.5 text-[13px] font-semibold tracking-wide text-accent uppercase">{eyebrow}</p>}
+        <h2 className="max-w-3xl text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] sm:text-[34px]">{title}</h2>
+        {lead && <p className="mt-3.5 max-w-2xl text-[16px] leading-relaxed muted">{lead}</p>}
+      </Reveal>
+      {children && (
+        <Reveal className="mt-9" delay={90} distance={22}>
+          {children}
+        </Reveal>
+      )}
     </section>
   );
 }
@@ -88,29 +107,41 @@ function Hero() {
         className="pointer-events-none absolute inset-x-0 -top-40 h-[30rem] bg-[radial-gradient(60%_60%_at_50%_50%,var(--color-brand-100),transparent)] opacity-70"
       />
       <div className="relative mx-auto max-w-6xl px-5 pt-16 pb-14 sm:pt-24 sm:pb-20">
-        <Badge tone="brand" className="mb-5">Built for small businesses in emerging markets first</Badge>
-        <h1 className="max-w-3xl text-[36px] leading-[1.08] font-semibold tracking-[-0.03em] sm:text-[54px]">
-          Run your business.
-          <br />
-          <span className="text-accent">NEXA runs the busywork.</span>
-        </h1>
-        <p className="mt-5 max-w-2xl text-[17px] leading-relaxed muted">
-          An intelligent operating system that helps you understand your business, manage daily operations and act on
-          opportunities, from customers, sales, invoices, stock and money in one place, with an AI that actually knows your numbers.
-        </p>
-        <div className="mt-7 flex flex-wrap items-center gap-3">
-          <Link to="/sign-up">
-            <Button variant="primary" size="lg">Start free</Button>
-          </Link>
-          <a href="#product">
-            <Button size="lg">See how it works</Button>
-          </a>
-        </div>
-        <p className="mt-4 text-[13px] subtle">No card required · Set up in under 3 minutes · Your data stays yours</p>
+        {/*
+          Two columns from `lg` up: copy left, artwork right. Below that the
+          artwork moves under the copy rather than shrinking beside it — a
+          hero illustration squeezed into a phone-width column communicates
+          nothing and costs a screenful of scroll.
+        */}
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
+          <div>
+            <Badge tone="brand" className="mb-5">Built for small businesses in emerging markets first</Badge>
+            <h1 className="text-[36px] leading-[1.08] font-semibold tracking-[-0.03em] sm:text-[54px]">
+              Run your business.
+              <br />
+              <span className="text-accent">NEXA runs the busywork.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-[17px] leading-relaxed muted">
+              An intelligent operating system that helps you understand your business, manage daily operations and act on
+              opportunities, from customers, sales, invoices, stock and money in one place, with an AI that actually knows your numbers.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link to="/sign-up">
+                <Button variant="primary" size="lg">Start free</Button>
+              </Link>
+              <a href="#product">
+                <Button size="lg">See how it works</Button>
+              </a>
+            </div>
+            <p className="mt-4 text-[13px] subtle">No card required · Set up in under 3 minutes · Your data stays yours</p>
+          </div>
 
-        <div className="mt-12">
-          <BriefMock />
+          <HeroVisual className="h-auto w-full max-w-[36rem] justify-self-center lg:max-w-none" />
         </div>
+
+        <Reveal className="mt-14" distance={24}>
+          <BriefMock />
+        </Reveal>
       </div>
     </section>
   );
