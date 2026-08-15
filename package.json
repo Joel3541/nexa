@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "NEXA — the intelligent operating system for modern small businesses.",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20.11"

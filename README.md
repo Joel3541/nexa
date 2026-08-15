@@ -118,5 +118,9 @@ delivered" rather than implying a send or a payment happened.
 
 ## Licence
 
-No licence has been chosen yet. Until one is added, default copyright applies
-and the code is readable but not licensed for reuse.
+[MIT](LICENSE) © 2026 Joel Duker.
+
+Use it, fork it, ship it commercially — just keep the copyright notice. The
+software is provided as-is with no warranty, which is worth reading literally
+given the status table above: the payment and AI adapters have not been run
+against live credentials.
