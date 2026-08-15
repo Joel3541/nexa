@@ -71,8 +71,11 @@ USER node
 EXPOSE 4000
 
 # Compose/Kubernetes read this; platform health checks use /health directly.
+# Mirrors the application's own precedence: PORT (platform-assigned) first,
+# then API_PORT, then the default. A healthcheck probing a different port than
+# the server bound to would report every healthy container as unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.API_PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||process.env.API_PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # Migrations run inside the process before the port opens, so there is no

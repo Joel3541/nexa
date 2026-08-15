@@ -33,8 +33,47 @@ const booleanish = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /**
+     * Port to bind.
+     *
+     * `PORT` wins when present. Every container platform NEXA is likely to run
+     * on — Render, Railway, Fly, Heroku, Cloud Run — assigns a port and injects
+     * it under that name, then health-checks the port it assigned. A service
+     * that ignores it binds somewhere nobody is listening, the health check
+     * times out, and the platform reports a crash loop with no error in the
+     * application log. `API_PORT` remains the knob for local development.
+     */
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-    WEB_ORIGIN: z.string().default('http://localhost:5173'),
+    /**
+     * Public origin of this deployment, **including the scheme**.
+     *
+     * Used for the CORS allowlist and, more importantly, interpolated into the
+     * verification and password-reset links that go out by email. A value
+     * without a scheme produces `example.com/verify-email?token=…`, which mail
+     * clients treat as a relative path — the link silently fails for every new
+     * signup, and nothing in the server logs looks wrong.
+     *
+     * Falls back to `RENDER_EXTERNAL_URL`, which Render injects at runtime with
+     * the full `https://…` origin. That is the only way to get this right on a
+     * first deploy, because the service's own URL does not exist until the
+     * service does. Reading one optional env var keeps the app portable — any
+     * other host simply sets WEB_ORIGIN directly.
+     */
+    WEB_ORIGIN: z
+      .string()
+      .optional()
+      // An empty string is not the same as unset to Zod's `.default()`, but it
+      // is to a human who left the field blank in a hosting dashboard. Treat
+      // blank as absent, or that person gets a validation error they cannot
+      // interpret.
+      .transform((value) => {
+        const explicit = value?.trim();
+        if (explicit) return explicit;
+        return process.env.RENDER_EXTERNAL_URL?.trim() || 'http://localhost:5173';
+      })
+      .refine((value) => /^https?:\/\//.test(value), {
+        message: 'WEB_ORIGIN must include a scheme, e.g. https://nexa.onrender.com',
+      }),
 
     DATABASE_DRIVER: z.enum(['pglite', 'postgres']).default('pglite'),
     DATABASE_DIR: z.string().default('.pgdata'),
@@ -153,7 +192,14 @@ const envSchema = z
 export type Env = z.infer<typeof envSchema>;
 
 function loadEnv(): Env {
-  const parsed = envSchema.safeParse(process.env);
+  // A platform-assigned PORT outranks the configured API_PORT. Applied before
+  // validation rather than inside the schema so that the precedence is visible
+  // in one place, and so `API_PORT` keeps a single meaning everywhere it is read.
+  const source: NodeJS.ProcessEnv = process.env.PORT
+    ? { ...process.env, API_PORT: process.env.PORT }
+    : process.env;
+
+  const parsed = envSchema.safeParse(source);
   if (!parsed.success) {
     const details = parsed.error.issues
       .map((issue) => `  - ${issue.path.join('.') || '(root)'}: ${issue.message}`)

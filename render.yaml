@@ -26,8 +26,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: API_PORT
-        value: 4000
+      # API_PORT is deliberately absent. Render assigns a port, injects it as
+      # PORT, and health-checks that port; the config gives PORT precedence.
+      # Pinning API_PORT here would bind somewhere Render is not listening and
+      # surface as a crash loop with nothing wrong in the application log.
       - key: DATABASE_DRIVER
         value: postgres
       - key: DATABASE_URL
@@ -44,12 +46,12 @@ services:
       # Render terminates TLS, so cookies must be Secure.
       - key: COOKIE_SECURE
         value: true
-      # Same-origin deployment: the API serves the client, so this is its own URL.
-      - key: WEB_ORIGIN
-        fromService:
-          name: nexa
-          type: web
-          property: host
+      # WEB_ORIGIN is deliberately absent. Render injects RENDER_EXTERNAL_URL
+      # at runtime with the full https:// origin, and packages/config falls back
+      # to it. `fromService … property: host` would look right here but yields a
+      # bare hostname with no scheme, which silently breaks every verification
+      # and password-reset link. Set WEB_ORIGIN explicitly only for a custom
+      # domain.
 
       - key: AI_PROVIDER
         value: mock # switch to `anthropic` once AI_API_KEY is set
