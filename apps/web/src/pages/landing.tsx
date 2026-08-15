@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HeroVisual } from '@/components/artwork';
 import { Wordmark } from '@/components/icons';
-import { Reveal } from '@/components/reveal';
+import { Reveal, staggerChildren } from '@/components/reveal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge, Button, Card, cx } from '@/components/ui/primitives';
 
@@ -69,6 +69,12 @@ function Section({
   lead,
   children,
   className,
+  /**
+   * Set when the children reveal themselves (a staggered grid). Wrapping them
+   * in a second Reveal would nest one transform inside another, so the cards
+   * would travel twice — once with the block, once on their own.
+   */
+  selfAnimatingChildren = false,
 }: {
   id?: string;
   eyebrow?: string;
@@ -76,6 +82,7 @@ function Section({
   lead?: string;
   children?: React.ReactNode;
   className?: string;
+  selfAnimatingChildren?: boolean;
 }) {
   return (
     <section id={id} className={cx('mx-auto max-w-6xl px-5 py-16 sm:py-20', className)}>
@@ -85,16 +92,19 @@ function Section({
         Heading and body are separate reveals with a small offset: the title
         settles first, which is the order the section is read in anyway.
       */}
-      <Reveal>
+      <Reveal distance={44}>
         {eyebrow && <p className="mb-2.5 text-[13px] font-semibold tracking-wide text-accent uppercase">{eyebrow}</p>}
         <h2 className="max-w-3xl text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] sm:text-[34px]">{title}</h2>
         {lead && <p className="mt-3.5 max-w-2xl text-[16px] leading-relaxed muted">{lead}</p>}
       </Reveal>
-      {children && (
-        <Reveal className="mt-9" delay={90} distance={22}>
-          {children}
-        </Reveal>
-      )}
+      {children &&
+        (selfAnimatingChildren ? (
+          <div className="mt-9">{children}</div>
+        ) : (
+          <Reveal className="mt-9" delay={170} distance={52}>
+            {children}
+          </Reveal>
+        ))}
     </section>
   );
 }
@@ -114,7 +124,9 @@ function Hero() {
           nothing and costs a screenful of scroll.
         */}
         <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-          <div>
+          {/* Copy and artwork converge from opposite sides. This is the first
+              motion a visitor sees, so it is the most pronounced on the page. */}
+          <Reveal direction="left">
             <Badge tone="brand" className="mb-5">Built for small businesses in emerging markets first</Badge>
             <h1 className="text-[36px] leading-[1.08] font-semibold tracking-[-0.03em] sm:text-[54px]">
               Run your business.
@@ -134,12 +146,14 @@ function Hero() {
               </a>
             </div>
             <p className="mt-4 text-[13px] subtle">No card required · Set up in under 3 minutes · Your data stays yours</p>
-          </div>
+          </Reveal>
 
-          <HeroVisual className="h-auto w-full max-w-[36rem] justify-self-center lg:max-w-none" />
+          <Reveal direction="right" delay={140} className="justify-self-center">
+            <HeroVisual className="h-auto w-full max-w-[36rem] lg:max-w-none" />
+          </Reveal>
         </div>
 
-        <Reveal className="mt-14" distance={24}>
+        <Reveal className="mt-14" distance={64}>
           <BriefMock />
         </Reveal>
       </div>
@@ -178,14 +192,17 @@ function Problem() {
       eyebrow="The problem"
       title="Most small businesses aren't short of data. They're short of answers."
       lead="You already generate everything needed to run the business well. It just never lands anywhere that can act on it."
+      selfAnimatingChildren
     >
       <div className="grid gap-4 sm:grid-cols-3">
-        {items.map((item) => (
-          <Card key={item.title}>
-            <h3 className="text-[15px] font-semibold">{item.title}</h3>
-            <p className="mt-2 text-[14px] leading-relaxed muted">{item.body}</p>
-          </Card>
-        ))}
+        {staggerChildren(
+          items.map((item) => (
+            <Card key={item.title} className="h-full">
+              <h3 className="text-[15px] font-semibold">{item.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed muted">{item.body}</p>
+            </Card>
+          )),
+        )}
       </div>
     </Section>
   );
@@ -372,14 +389,17 @@ function AutomationSection() {
       eyebrow="Agents"
       title="Specialists that watch the business while you work in it."
       lead="Each agent has its own remit and its own tool permissions. They raise what matters to the activity feed. None of them can change a record on their own."
+      selfAnimatingChildren
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {agents.map(([name, body]) => (
-          <Card key={name}>
-            <h3 className="text-[15px] font-semibold">{name}</h3>
-            <p className="mt-2 text-[13.5px] leading-relaxed muted">{body}</p>
-          </Card>
-        ))}
+        {staggerChildren(
+          agents.map(([name, body]) => (
+            <Card key={name} className="h-full">
+              <h3 className="text-[15px] font-semibold">{name}</h3>
+              <p className="mt-2 text-[13.5px] leading-relaxed muted">{body}</p>
+            </Card>
+          )),
+        )}
       </div>
     </Section>
   );

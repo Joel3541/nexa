@@ -26,14 +26,24 @@ export function Reveal({
   as: Tag = 'div',
   delay = 0,
   className,
-  /** Distance to travel, in px. Larger reads as heavier — keep it subtle. */
-  distance = 18,
+  /** Vertical travel, in px. The main lever for how pronounced this feels. */
+  distance = 40,
+  /**
+   * Entrance direction. `left`/`right` are the most noticeable, because
+   * nothing else on a scrolling page moves horizontally — reserve them for
+   * side-by-side content where the direction matches the layout.
+   */
+  direction = 'up',
+  /** Starting scale. Below ~0.9 it reads as a zoom rather than an arrival. */
+  scale = 0.96,
 }: {
   children: ReactNode;
   as?: ElementType;
   delay?: number;
   className?: string;
   distance?: number;
+  direction?: 'up' | 'left' | 'right';
+  scale?: number;
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -95,10 +105,19 @@ export function Reveal({
   return (
     <Tag
       ref={ref}
-      className={cx('reveal', visible && 'is-visible', className)}
+      className={cx(
+        'reveal',
+        direction === 'left' && 'reveal-left',
+        direction === 'right' && 'reveal-right',
+        visible && 'is-visible',
+        className,
+      )}
       style={{
         '--reveal-delay': `${delay}ms`,
-        '--reveal-distance': `${distance}px`,
+        // Horizontal variants set their own offsets in CSS, where the media
+        // query can drop them on narrow screens.
+        ...(direction === 'up' ? { '--reveal-y': `${distance}px` } : {}),
+        '--reveal-scale': scale,
       } as React.CSSProperties}
     >
       {children}
@@ -116,19 +135,42 @@ export function Reveal({
 export function RevealGroup({
   children,
   className,
-  step = 80,
+  step = 110,
+  distance = 40,
+  direction = 'up',
 }: {
   children: ReactNode[];
   className?: string;
   step?: number;
+  distance?: number;
+  direction?: 'up' | 'left' | 'right';
 }) {
   return (
     <div className={className}>
       {children.map((child, index) => (
-        <Reveal key={index} delay={Math.min(index, 6) * step}>
+        <Reveal key={index} delay={Math.min(index, 6) * step} distance={distance} direction={direction}>
           {child}
         </Reveal>
       ))}
     </div>
   );
+}
+
+/**
+ * Staggers a grid's own children without adding a wrapper element.
+ *
+ * `RevealGroup` wraps each child in a div, which breaks a CSS grid — the
+ * wrappers become the grid items and the columns collapse. This instead
+ * returns the children already wrapped, so the caller spreads them directly
+ * into its existing grid and the layout is untouched.
+ */
+export function staggerChildren(
+  children: ReactNode[],
+  { step = 110, distance = 40 }: { step?: number; distance?: number } = {},
+): ReactNode[] {
+  return children.map((child, index) => (
+    <Reveal key={index} delay={Math.min(index, 6) * step} distance={distance}>
+      {child}
+    </Reveal>
+  ));
 }

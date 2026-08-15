@@ -60,6 +60,9 @@
   --duration-fast: 150ms;
   --duration-base: 240ms;
   --duration-slow: 420ms;
+  /* Scroll entrances. Long enough to be clearly seen, short enough that a fast
+     scroller is never waiting on it. */
+  --duration-reveal: 720ms;
 }
 
 @layer base {
@@ -492,22 +495,47 @@
  * never arrives, whereas a transition's resting state is the visible one — so
  * the worst case of a scripting failure is "no motion", not "no content".
  */
+/*
+ * Reveals get their own duration rather than borrowing --duration-slow. A
+ * button's hover and a section arriving on screen are different kinds of event:
+ * the button must feel instant, the section wants time to read as deliberate.
+ * Tying them to one number means tuning either one breaks the other.
+ */
 .reveal {
   opacity: 0;
-  transform: translate3d(0, var(--reveal-distance, 18px), 0);
+  transform: translate3d(var(--reveal-x, 0), var(--reveal-y, 40px), 0) scale(var(--reveal-scale, 0.96));
   transition:
-    opacity var(--duration-slow) var(--ease-out-soft),
-    transform var(--duration-slow) var(--ease-out-soft);
+    opacity var(--duration-reveal) var(--ease-out-soft),
+    transform var(--duration-reveal) var(--ease-out-soft);
   transition-delay: var(--reveal-delay, 0ms);
   /* Promote once, up front, so the first frame is not the janky one. */
   will-change: opacity, transform;
 }
 .reveal.is-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0) scale(1);
   /* Released after arrival — a permanently promoted layer costs memory for
      motion that has already finished. */
   will-change: auto;
+}
+
+/*
+ * Directional variants. Alternating sides down a long page reads as composed
+ * rather than repetitive, and lateral movement is far more noticeable than
+ * vertical because nothing else on a scrolling page moves sideways.
+ *
+ * Only applied from `sm` up: on a phone the viewport is narrow enough that a
+ * horizontal entrance either clips or forces a scrollbar mid-animation.
+ */
+@media (min-width: 640px) {
+  .reveal-left {
+    --reveal-x: -46px;
+    --reveal-y: 14px;
+  }
+  .reveal-right {
+    --reveal-x: 46px;
+    --reveal-y: 14px;
+  }
 }
 
 /*
