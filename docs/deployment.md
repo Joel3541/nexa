@@ -17,6 +17,28 @@ anywhere, set `WEB_ORIGIN` to that host, and the CORS allowlist takes over.
 
 ---
 
+## Going live, in an order that cannot break the site
+
+Run `npm run preflight` at any point to see exactly what is still stubbed. It
+exits non-zero on a blocker, so it also works as a release gate in CI.
+
+The ordering below matters. `AI_PROVIDER=anthropic` without a key, or
+`EMAIL_PROVIDER=smtp` without a host, **fails validation and the process
+refuses to start** — that is deliberate, but it means the provider switch is
+always the *last* change, and it belongs in the hosting dashboard rather than in
+a committed file where it takes effect the instant the blueprint syncs.
+
+| # | Step | Why this order |
+|---|---|---|
+| 1 | Database on a paid plan | Render's free Postgres is deleted after 90 days. Unrecoverable, and it happens on a timer nobody is watching. |
+| 2 | `AUTH_SECRET`, `COOKIE_SECURE=true` | The app refuses to boot in production without them. |
+| 3 | SMTP credentials → *then* `EMAIL_PROVIDER=smtp` | Until this is done, password reset has no recovery path. Do it before real signups, not after. |
+| 4 | `AI_MONTHLY_BUDGET_CENTS` → `AI_API_KEY` → *then* `AI_PROVIDER=anthropic` | Cap the spend before enabling the spend. Then prove it with `npm run ai:verify`. |
+| 5 | Payment keys + webhook secret → *then* `PAYMENT_PROVIDER` | Last, because this is where a bug costs someone real money. Test with a live low-value transaction. |
+
+Steps 3–5 are each independently useful: the product works with any subset
+enabled, and every disabled provider says so in the UI rather than pretending.
+
 ## Before anything else
 
 Two settings decide whether a deployment is safe to put a real business on. The

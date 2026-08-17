@@ -10,7 +10,8 @@
     "seed": "tsx src/seed/run.ts",
     "reset": "tsx src/seed/run.ts --reset",
     "build": "tsc -p tsconfig.json",
-    "ai:verify": "tsx src/scripts/ai-verify.ts"
+    "ai:verify": "tsx src/scripts/ai-verify.ts",
+    "preflight": "tsx src/scripts/preflight.ts"
   },
   "dependencies": {
     "@nexa/ai": "*",

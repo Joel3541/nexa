@@ -11,10 +11,16 @@ databases:
   - name: nexa-db
     databaseName: nexa
     user: nexa
-    # Free tier expires after 90 days; move to `starter` before running a real
-    # business on it. Losing a production database to a plan expiry is not a
-    # theoretical risk.
-    plan: free
+    #
+    # NOT `free`. Render's free Postgres is **deleted after 90 days**, and it is
+    # deleted whether or not a real business is depending on it. That failure is
+    # unrecoverable and arrives on a timer nobody is watching, which makes it the
+    # single worst default in this file.
+    #
+    # `basic-256mb` is the entry paid tier (hyphens, not underscores — the
+    # blueprint sync rejects a wrong identifier). It also unlocks the automatic
+    # daily backups the free tier does not have.
+    plan: basic-256mb
 
 services:
   - type: web
@@ -53,17 +59,61 @@ services:
       # and password-reset link. Set WEB_ORIGIN explicitly only for a custom
       # domain.
 
+      # --- AI -------------------------------------------------------------
+      #
+      # Everything except the switch itself is configured, so going live is one
+      # field and one redeploy. The switch stays on `mock` deliberately: the
+      # config layer refuses to boot when AI_PROVIDER=anthropic without a key,
+      # so committing `anthropic` here would take the service down the moment
+      # this file syncs and before anyone had a chance to paste the key.
+      #
+      # Order that cannot break the site:
+      #   1. Set AI_API_KEY in the dashboard (Environment tab).
+      #   2. Change AI_PROVIDER to `anthropic` in the dashboard, not here.
+      #   3. Once it is confirmed working, change this file to match.
       - key: AI_PROVIDER
-        value: mock # switch to `anthropic` once AI_API_KEY is set
+        value: mock
       - key: AI_API_KEY
         sync: false # set in the dashboard; never committed
       - key: AI_MODEL
         value: claude-opus-5
+      # Reasoning depth. `medium` is the balance point for a business assistant.
+      - key: AI_EFFORT
+        value: medium
+      - key: AI_THINKING
+        value: true
+      #
+      # A hard ceiling on estimated spend per business per calendar month, in US
+      # cents. 500 = $5.00. Set to a real number rather than 0 *before* the key
+      # goes in: a public URL with an uncapped AI budget is an invitation, and
+      # the guard is checked before each turn so an overshoot is bounded by one
+      # request. Raise it once you know what normal usage costs — GET /api/ai/usage
+      # reports month-to-date consumption per business.
       - key: AI_MONTHLY_BUDGET_CENTS
-        value: 0
+        value: 500
 
+      # --- Email ----------------------------------------------------------
+      #
+      # `console` writes messages to the log instead of sending them. That is
+      # honest — the outbox marks them simulated and the UI says "prepared, not
+      # delivered" — but it means **password reset does not work**. A user who
+      # forgets their password has no recovery path, because the reset link goes
+      # to a log file. Fix this before real signups, not after.
+      #
+      # Same reasoning as AI_PROVIDER: the config refuses to boot with
+      # EMAIL_PROVIDER=smtp and no SMTP_HOST, so the switch flips last.
+      #   1. Set SMTP_HOST / SMTP_USER / SMTP_PASSWORD / EMAIL_FROM below.
+      #   2. Change EMAIL_PROVIDER to `smtp` in the dashboard.
+      #
+      # Any transactional provider works — Resend, Postmark, SES, Mailgun,
+      # Brevo — because the adapter speaks plain SMTP rather than one vendor's
+      # SDK. Free tiers are far more than a small business needs.
       - key: EMAIL_PROVIDER
         value: console
+      #
+      # Must be an address at a domain you have verified with your provider, or
+      # mail is silently dropped or spam-filed. `onboarding@resend.dev` works
+      # for testing without a domain.
       - key: EMAIL_FROM
         sync: false
       - key: SMTP_HOST
@@ -72,6 +122,11 @@ services:
         sync: false
       - key: SMTP_PASSWORD
         sync: false
+      # 587 with STARTTLS is the near-universal default; 465 needs SMTP_SECURE=true.
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
 
       - key: PAYMENT_PROVIDER
         value: mock
@@ -80,6 +135,15 @@ services:
       - key: PAYMENT_WEBHOOK_SECRET
         sync: false
 
-      # Demo data is for evaluating NEXA, not for a live workspace.
+      # Demo data is for evaluating NEXA, not for a live workspace. The seeder
+      # also refuses to run in production unless this is true, because the demo
+      # credentials are published in this repository.
       - key: SEED_DEMO_DATA
         value: false
+
+      # Proactive agents: monitoring scans, the Morning Brief at 07:00 in each
+      # business's own timezone, and expiry of stale AI proposals. Safe to leave
+      # on if you scale to several instances — each job takes a Postgres
+      # advisory lock, so exactly one instance runs any given pass.
+      - key: WORKER_ENABLED
+        value: true
