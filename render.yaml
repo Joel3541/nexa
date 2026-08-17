@@ -87,13 +87,23 @@ services:
         value: true
       #
       # A hard ceiling on estimated spend per business per calendar month, in US
-      # cents. 500 = $5.00. Set to a real number rather than 0 *before* the key
-      # goes in: a public URL with an uncapped AI budget is an invitation, and
-      # the guard is checked before each turn so an overshoot is bounded by one
-      # request. Raise it once you know what normal usage costs — GET /api/ai/usage
-      # reports month-to-date consumption per business.
+      # cents. 2000 = $20.00. Never 0 with a live key: a public URL with an
+      # uncapped AI budget is an invitation, and the ceiling is checked *before*
+      # each turn, so an overshoot is bounded by one request rather than by how
+      # long it takes someone to notice.
+      #
+      # What $20 buys, measured against this codebase's actual prompt footprint
+      # (~2,969 fixed tokens per request — a 346-token system prompt plus 16 tool
+      # schemas — and a ~3-request turn with caching):
+      #
+      #   claude-opus-5     ~$0.039/turn   ~510 turns
+      #   claude-sonnet-5   ~$0.023/turn   ~850 turns
+      #   claude-haiku-4-5  ~$0.008/turn  ~2500 turns
+      #
+      # Per business, so this is a per-tenant guard, not a total. Read
+      # GET /api/ai/usage for month-to-date consumption before changing it.
       - key: AI_MONTHLY_BUDGET_CENTS
-        value: 500
+        value: 2000
 
       # --- Email ----------------------------------------------------------
       #
