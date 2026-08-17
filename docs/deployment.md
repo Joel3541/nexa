@@ -30,7 +30,7 @@ a committed file where it takes effect the instant the blueprint syncs.
 
 | # | Step | Why this order |
 |---|---|---|
-| 1 | Database on a paid plan | Render's free Postgres is deleted after 90 days. Unrecoverable, and it happens on a timer nobody is watching. |
+| 1 | Database on a paid plan | Render's free Postgres **expires 30 days after creation**, then is deleted 14 days later — and free databases have no backups of any kind, so there is nothing to restore. |
 | 2 | `AUTH_SECRET`, `COOKIE_SECURE=true` | The app refuses to boot in production without them. |
 | 3 | SMTP credentials → *then* `EMAIL_PROVIDER=smtp` | Until this is done, password reset has no recovery path. Do it before real signups, not after. |
 | 4 | `AI_MONTHLY_BUDGET_CENTS` → `AI_API_KEY` → *then* `AI_PROVIDER=anthropic` | Cap the spend before enabling the spend. Then prove it with `npm run ai:verify`. |
@@ -91,8 +91,12 @@ Set by hand in the dashboard (they are marked `sync: false`, so they never enter
 the repo): `AI_API_KEY`, `SMTP_*`, `PAYMENT_PROVIDER_KEY`,
 `PAYMENT_WEBHOOK_SECRET`.
 
-> The blueprint defaults the database to the free plan, which **expires after
-> 90 days**. Move it to `starter` before a real business depends on it.
+The blueprint specifies `basic-256mb` for the database rather than `free`, and
+that is deliberate. A free Render Postgres **expires 30 days after creation**,
+becomes inaccessible, and is permanently deleted 14 days after that — and free
+databases have no backups, so there is nothing to recover from. Upgrading is an
+in-place instance-type change, not a migration, so an expired free database can
+still be rescued; a deleted one cannot.
 
 ---
 

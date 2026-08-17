@@ -12,14 +12,17 @@ databases:
     databaseName: nexa
     user: nexa
     #
-    # NOT `free`. Render's free Postgres is **deleted after 90 days**, and it is
-    # deleted whether or not a real business is depending on it. That failure is
-    # unrecoverable and arrives on a timer nobody is watching, which makes it the
-    # single worst default in this file.
+    # NOT `free`. Per Render's own docs: a free Postgres database **expires 30
+    # days after creation**, becomes inaccessible on expiry, and is permanently
+    # deleted 14 days later. Free databases also "don't support any form of
+    # backups", so there is nothing to restore from — the data is simply gone,
+    # on a timer nobody is watching. That makes it the worst default in this file.
+    #
+    # The upgrade is in place: an expired free database is recoverable by moving
+    # it to a paid instance type, so this is not a migration.
     #
     # `basic-256mb` is the entry paid tier (hyphens, not underscores — the
-    # blueprint sync rejects a wrong identifier). It also unlocks the automatic
-    # daily backups the free tier does not have.
+    # blueprint sync rejects a wrong identifier), and it has daily backups.
     plan: basic-256mb
 
 services:
