@@ -114,18 +114,29 @@ services:
       - key: EMAIL_PROVIDER
         value: console
       #
-      # Must be an address at a domain you have verified with your provider, or
-      # mail is silently dropped or spam-filed. `onboarding@resend.dev` works
-      # for testing without a domain.
+      # Must be an address at a domain you have verified with Resend, or mail is
+      # dropped or spam-filed. `onboarding@resend.dev` works for testing without
+      # owning a domain — use it to prove the pipe, then switch to your own.
       - key: EMAIL_FROM
         sync: false
+      #
+      # Resend's SMTP endpoint. Host and username are not secrets, so they live
+      # here; only the API key does not.
       - key: SMTP_HOST
-        sync: false
+        value: smtp.resend.com
+      #
+      # Literally the string `resend`, not your email address. This is the single
+      # most common mistake with Resend's SMTP, and it fails as a generic
+      # authentication error that tells you nothing.
       - key: SMTP_USER
-        sync: false
+        value: resend
+      #
+      # Your Resend API key (re_…). Set in the dashboard; never committed.
       - key: SMTP_PASSWORD
         sync: false
-      # 587 with STARTTLS is the near-universal default; 465 needs SMTP_SECURE=true.
+      #
+      # Resend offers 25/587/2587 for STARTTLS and 465/2465 for implicit TLS.
+      # 587 is chosen because outbound 465 is blocked on more networks than 587.
       - key: SMTP_PORT
         value: 587
       - key: SMTP_SECURE

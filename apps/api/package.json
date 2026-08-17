@@ -11,7 +11,8 @@
     "reset": "tsx src/seed/run.ts --reset",
     "build": "tsc -p tsconfig.json",
     "ai:verify": "tsx src/scripts/ai-verify.ts",
-    "preflight": "tsx src/scripts/preflight.ts"
+    "preflight": "tsx src/scripts/preflight.ts",
+    "email:verify": "tsx src/scripts/email-verify.ts"
   },
   "dependencies": {
     "@nexa/ai": "*",
