@@ -202,12 +202,37 @@ server's own reason, not reported as sent.
 
 | Concern | Where |
 |---|---|
-| Liveness / readiness | `GET /health` |
+| Liveness (is the process alive?) | `GET /health` — cheap, no dependencies |
+| Readiness (can it serve?) | `GET /health/ready` — pings the database, 503 if unreachable |
 | Migrations | Applied automatically at boot, before the port opens |
 | Graceful shutdown | SIGTERM closes the server, then the database. `tini` in the image forwards the signal so this actually runs |
 | Logs | Structured JSON on stdout; `LOG_LEVEL` controls verbosity |
 | Rate limiting | On by default; disable only behind your own gateway |
 | Backups | Your database provider's. NEXA holds no state outside PostgreSQL apart from built assets |
+
+### Monitoring — set this up before you have users
+
+The two endpoints are deliberately different, and pointing the wrong one at the
+wrong consumer causes the failure it was meant to prevent:
+
+- **`/health` is what the platform restarts on.** It must not check the
+  database. A five-second blip would otherwise kill a healthy process and
+  restart it into a crash loop, turning a brief degradation into an outage.
+  This is what `healthCheckPath` in `render.yaml` points at.
+- **`/health/ready` is what *you* watch.** It answers 503 when the database is
+  unreachable, which is the state a liveness check cannot see: the process is
+  genuinely alive, it simply cannot do anything useful.
+
+Point an external uptime monitor at `https://<your-host>/health/ready` with a
+five-minute interval and email alerts. UptimeRobot and Better Stack both cover
+this on their free tiers. Render's own notification settings will additionally
+tell you about failed deploys and suspensions.
+
+This matters more than it sounds. Nothing inside a dead process can report that
+it died, so without an external watcher the first thing that tells you the site
+is down is a user — or nobody at all. A deployment can sit broken for weeks
+while `/health` keeps answering, which is precisely how this project's first
+production database reached its expiry unnoticed.
 
 ### Upgrading
 
