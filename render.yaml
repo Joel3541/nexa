@@ -23,14 +23,24 @@ databases:
     #
     # `basic-256mb` is the entry paid tier (hyphens, not underscores — the
     # blueprint sync rejects a wrong identifier), and it has daily backups.
-    plan: basic-256mb
+    # Render's plan identifiers are CPU-and-memory coded, not named tiers.
+    # `basic-256mb` and `starter` look plausible and are rejected, which fails
+    # the whole blueprint sync — the failure that kept this deployment stuck.
+    # Valid Postgres plans: free, 0.1c-256mb, 0.5c-1g, 1c-2g, 2c-4g, …
+    plan: 0.1c-256mb
 
 services:
   - type: web
     name: nexa
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter
+    # Valid web plans: free, 0.5c-512mb, 1c-2g, 2c-4g, 4c-8g, …
+    # 0.5c-512mb is the entry paid tier and does not spin down. If the process
+    # is OOM-killed under load, 1c-2g is the next step up — the runtime is a
+    # single Node server, so memory is the constraint before CPU.
+    plan: 0.5c-512mb
+    # Liveness, deliberately: this is what Render restarts on, so it must not
+    # depend on the database. Watch /health/ready externally instead.
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
