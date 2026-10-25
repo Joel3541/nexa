@@ -73,8 +73,15 @@ cp .env.example .env    # set AUTH_SECRET and COOKIE_SECURE at minimum
 docker compose up -d
 ```
 
-`render.yaml` and `fly.toml` are included for one-click hosting. Full guide:
-**[docs/deployment.md](docs/deployment.md)**.
+Any platform that builds a Dockerfile works. **Railway** needs no
+configuration file — point it at the repo, add its PostgreSQL plugin, set
+`DATABASE_URL` to `${{Postgres.DATABASE_URL}}`, and generate a domain; the port
+and public origin resolve themselves. `render.yaml` and `fly.toml` are included
+for those platforms.
+
+Run `npm run preflight` against any deployment to see what is still stubbed — it
+exits non-zero on anything a real user would hit, so it doubles as a release
+gate. Full guide: **[docs/deployment.md](docs/deployment.md)**.
 
 ---
 

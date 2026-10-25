@@ -81,6 +81,69 @@ Create the first workspace by signing up through the UI.
 
 ---
 
+## What the platform tells the app about itself
+
+Two settings cannot be filled in before a first deploy, because they depend on
+facts that do not exist until the service does. NEXA reads them from the
+platform rather than asking you to guess:
+
+| Setting | Resolved from | Notes |
+|---|---|---|
+| Port | `PORT` | Outranks `API_PORT`. Every platform here assigns a port and health-checks the one it assigned. |
+| `WEB_ORIGIN` | `RENDER_EXTERNAL_URL`, `RAILWAY_PUBLIC_DOMAIN`, `FLY_APP_NAME` | `https://` is added when the platform omits it — Railway's variable is a bare hostname, and a scheme-less origin produces email links that fail silently. |
+
+`DATABASE_DRIVER` is inferred too: in production, with `DATABASE_URL` set and no
+explicit driver, NEXA uses `postgres`. Defaulting to PGlite there would boot the
+app against a directory *inside the container* — every request correct, every
+row destroyed by the next deploy, nothing logged as an error. An explicit
+`DATABASE_DRIVER` is always respected, including `pglite` on a persistent
+volume.
+
+On any host not in that table, set `WEB_ORIGIN` and `DATABASE_DRIVER` yourself.
+`npm run preflight` will tell you if you have not.
+
+---
+
+## Railway
+
+The shortest path, and the only one here with **no configuration file at all**.
+Railway detects the `Dockerfile` and builds it.
+
+1. **New Project → Deploy from GitHub repo**, and pick this repository.
+2. **+ New → Database → Add PostgreSQL.** This is a real managed Postgres with
+   no expiry timer.
+3. On the app service, **Variables**, and add:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — the literal text, including braces |
+   | `NODE_ENV` | `production` |
+   | `COOKIE_SECURE` | `true` |
+   | `AUTH_SECRET` | 32+ random chars — `openssl rand -hex 32` |
+   | `AI_MONTHLY_BUDGET_CENTS` | `2000` |
+   | `SEED_DEMO_DATA` | `false` |
+
+   `${{Postgres.DATABASE_URL}}` is Railway's cross-service reference syntax; it
+   resolves at deploy time and follows the database if its credentials rotate.
+   Substitute the service's actual name if you renamed it from `Postgres`.
+4. **Settings → Networking → Generate Domain.** `WEB_ORIGIN` resolves itself
+   from that domain; `DATABASE_DRIVER` resolves itself from `DATABASE_URL`.
+5. **Settings → Deploy → Healthcheck Path:** `/health`.
+
+Then the optional providers — `AI_API_KEY`, `SMTP_PASSWORD`, `EMAIL_FROM`,
+payment keys — in the same Variables tab, in the order under *Going live* above.
+
+> **Do not add a `railway.json` or `railway.toml`.** Railway's Config as Code is
+> deprecated: new services cannot opt into it, and existing files **stop being
+> read on 2026-12-01**. Its replacement, Infrastructure as Code
+> (`.railway/railway.ts`), is *not* applied during a deploy — it has to be
+> pushed with `railway config plan` and `railway config apply`. A committed
+> config file would therefore either be ignored or quietly expire, which is why
+> this repository has neither. The five settings above live in the dashboard,
+> where they take effect when you save them.
+
+---
+
 ## Render
 
 `render.yaml` is a Blueprint. Push the repo to GitHub, then **New → Blueprint**.
@@ -91,12 +154,26 @@ Set by hand in the dashboard (they are marked `sync: false`, so they never enter
 the repo): `AI_API_KEY`, `SMTP_*`, `PAYMENT_PROVIDER_KEY`,
 `PAYMENT_WEBHOOK_SECRET`.
 
-The blueprint specifies `basic-256mb` for the database rather than `free`, and
+The blueprint specifies `0.1c-256mb` for the database rather than `free`, and
 that is deliberate. A free Render Postgres **expires 30 days after creation**,
 becomes inaccessible, and is permanently deleted 14 days after that — and free
 databases have no backups, so there is nothing to recover from. Upgrading is an
 in-place instance-type change, not a migration, so an expired free database can
 still be rescued; a deleted one cannot.
+
+**Render's plan identifiers are CPU-and-memory coded, not named tiers.** Valid
+Postgres plans are `free`, `0.1c-256mb`, `0.5c-1g`, `1c-2g`, …; valid web plans
+are `free`, `0.5c-512mb`, `1c-2g`, …. Plausible-looking names like `starter` or
+`basic-256mb` are rejected, and an unrecognised plan **fails the entire
+blueprint sync** — so a one-word mistake here leaves every other change in the
+file unapplied, with the service still running its old configuration. This cost
+this project a five-week outage. If a sync does not take effect, check the
+plan identifiers before anything else.
+
+If the blueprint fights you, build the service by hand instead: **New → Web
+Service**, point it at the repo, runtime Docker, then add a **New → PostgreSQL**
+and set the variables as in the Railway section. Nothing in the application
+requires the blueprint.
 
 ---
 

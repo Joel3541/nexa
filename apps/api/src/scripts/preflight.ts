@@ -4,7 +4,8 @@
  * The gap between "deployed" and "ready for the public" is a list of stubs that
  * each look fine in a config file and fail only when a real person hits them.
  * Console email looks harmless until someone forgets their password; a free
- * database looks harmless until day 90. This turns that list into a command.
+ * database looks harmless until it expires on day 30. This turns that list into
+ * a command.
  *
  * Three levels, and the distinction is deliberate:
  *

@@ -30,6 +30,73 @@ const booleanish = z
   .union([z.boolean(), z.string()])
   .transform((value) => (typeof value === 'boolean' ? value : ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())));
 
+/** Prefix a bare hostname with https://. A full URL is returned unchanged. */
+function withScheme(host: string | undefined): string | undefined {
+  const value = host?.trim();
+  if (!value) return undefined;
+  return /^https?:\/\//.test(value) ? value : `https://${value}`;
+}
+
+/**
+ * Hosting platforms that publish the deployment's own public address.
+ *
+ * This exists because a service cannot know its own URL on a first deploy — the
+ * URL does not exist until the service does — so `WEB_ORIGIN` is the one
+ * setting that cannot be filled in ahead of time. Reading whichever variable
+ * the platform injects closes that gap without tying the app to any one host.
+ *
+ * The scheme is the whole point. These values end up inside verification and
+ * password-reset links, and `example.com/verify-email?token=…` without a scheme
+ * is treated by mail clients as a relative path: the link fails for every
+ * signup and nothing in the server log looks wrong.
+ */
+const PLATFORM_ORIGINS: ReadonlyArray<{
+  platform: string;
+  read: (source: NodeJS.ProcessEnv) => string | undefined;
+}> = [
+  // Render injects the full origin, scheme included.
+  { platform: 'Render', read: (source) => withScheme(source.RENDER_EXTERNAL_URL) },
+  // Railway publishes a bare hostname — `nexa-production.up.railway.app`.
+  { platform: 'Railway', read: (source) => withScheme(source.RAILWAY_PUBLIC_DOMAIN) },
+  // Fly names the app; its default origin follows from the name.
+  { platform: 'Fly.io', read: (source) => (source.FLY_APP_NAME?.trim() ? `https://${source.FLY_APP_NAME.trim()}.fly.dev` : undefined) },
+];
+
+/**
+ * The public origin of this deployment according to the platform running it,
+ * or undefined when nothing recognisable is present (local, Docker, bare VM).
+ */
+export function detectPlatformOrigin(source: NodeJS.ProcessEnv = process.env): string | undefined {
+  for (const { read } of PLATFORM_ORIGINS) {
+    const origin = read(source);
+    if (origin) return origin;
+  }
+  return undefined;
+}
+
+/**
+ * The database driver to use when the operator has not named one.
+ *
+ * `pglite` is the right default for development and CI: a real PostgreSQL
+ * engine in-process, no server to install. In production it is a trap. A
+ * `DATABASE_URL` is a managed database somebody deliberately provisioned, and
+ * every platform that provisions one injects it under exactly that name — so
+ * falling back to pglite there means the app boots happily against a directory
+ * inside the container, serves every request correctly, and loses all of it on
+ * the next deploy. Nothing fails; the data is simply gone.
+ *
+ * An explicit `DATABASE_DRIVER` always wins, including an explicit `pglite` in
+ * production, which is a defensible choice on a persistent volume and still
+ * warned about at startup.
+ *
+ * Returns the driver to apply, or undefined to leave the setting alone.
+ */
+export function resolveDatabaseDriver(source: NodeJS.ProcessEnv): 'postgres' | undefined {
+  if (source.DATABASE_DRIVER?.trim()) return undefined;
+  if (source.NODE_ENV !== 'production') return undefined;
+  return source.DATABASE_URL?.trim() ? 'postgres' : undefined;
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -53,11 +120,15 @@ const envSchema = z
      * clients treat as a relative path — the link silently fails for every new
      * signup, and nothing in the server logs looks wrong.
      *
-     * Falls back to `RENDER_EXTERNAL_URL`, which Render injects at runtime with
-     * the full `https://…` origin. That is the only way to get this right on a
-     * first deploy, because the service's own URL does not exist until the
-     * service does. Reading one optional env var keeps the app portable — any
-     * other host simply sets WEB_ORIGIN directly.
+     * Falls back to whatever the hosting platform publishes about itself — see
+     * `PLATFORM_ORIGINS`. That is the only way to get this right on a first
+     * deploy, because the service's own URL does not exist until the service
+     * does. Any host that is not recognised simply sets WEB_ORIGIN directly.
+     *
+     * An *explicit* value is still held to the scheme requirement rather than
+     * being repaired, because a bare hostname typed into a hosting dashboard is
+     * ambiguous — http or https, apex or subdomain — and a refusal to boot with
+     * a readable message beats a guess that breaks email a week later.
      */
     WEB_ORIGIN: z
       .string()
@@ -69,10 +140,10 @@ const envSchema = z
       .transform((value) => {
         const explicit = value?.trim();
         if (explicit) return explicit;
-        return process.env.RENDER_EXTERNAL_URL?.trim() || 'http://localhost:5173';
+        return detectPlatformOrigin() ?? 'http://localhost:5173';
       })
       .refine((value) => /^https?:\/\//.test(value), {
-        message: 'WEB_ORIGIN must include a scheme, e.g. https://nexa.onrender.com',
+        message: 'WEB_ORIGIN must include a scheme, e.g. https://nexa.up.railway.app',
       }),
 
     DATABASE_DRIVER: z.enum(['pglite', 'postgres']).default('pglite'),
@@ -191,13 +262,28 @@ const envSchema = z
 
 export type Env = z.infer<typeof envSchema>;
 
+/** True when the driver was inferred rather than configured. Logged at boot. */
+export let databaseDriverWasInferred = false;
+
 function loadEnv(): Env {
-  // A platform-assigned PORT outranks the configured API_PORT. Applied before
-  // validation rather than inside the schema so that the precedence is visible
-  // in one place, and so `API_PORT` keeps a single meaning everywhere it is read.
-  const source: NodeJS.ProcessEnv = process.env.PORT
-    ? { ...process.env, API_PORT: process.env.PORT }
-    : process.env;
+  // Everything the platform decides for us, resolved in one place so the
+  // precedence is readable rather than spread across the schema.
+  const overrides: Record<string, string> = {};
+
+  // A platform-assigned PORT outranks the configured API_PORT. Render, Railway,
+  // Fly, Heroku and Cloud Run all assign a port, inject it under this name, and
+  // health-check the port they assigned; a service that ignores it binds where
+  // nobody is listening and surfaces as a crash loop with a clean app log.
+  if (process.env.PORT) overrides.API_PORT = process.env.PORT;
+
+  const inferredDriver = resolveDatabaseDriver(process.env);
+  if (inferredDriver) {
+    overrides.DATABASE_DRIVER = inferredDriver;
+    databaseDriverWasInferred = true;
+  }
+
+  const source: NodeJS.ProcessEnv =
+    Object.keys(overrides).length > 0 ? { ...process.env, ...overrides } : process.env;
 
   const parsed = envSchema.safeParse(source);
   if (!parsed.success) {

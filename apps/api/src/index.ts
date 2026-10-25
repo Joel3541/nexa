@@ -1,4 +1,4 @@
-import { env } from '@nexa/config';
+import { databaseDriverWasInferred, env } from '@nexa/config';
 import { closeDb, runMigrations } from '@nexa/database';
 import { createApp } from './app.js';
 import { logger } from './lib/logger.js';
@@ -42,7 +42,12 @@ async function main(): Promise<void> {
   warnAboutRiskyProductionConfig();
 
   await runMigrations();
-  logger.info('database ready', { driver: env.DATABASE_DRIVER });
+  logger.info('database ready', {
+    driver: env.DATABASE_DRIVER,
+    // An inferred driver is correct but unstated, and an operator debugging a
+    // connection has to know which of the two code paths they are looking at.
+    ...(databaseDriverWasInferred ? { driverSource: 'inferred from DATABASE_URL' } : {}),
+  });
 
   const app = createApp();
   const server = app.listen(env.API_PORT, () => {
